@@ -1,11 +1,11 @@
-#include <QsqlTableModel>
-#include <QTableView>
+#include <QApplication>
+#include <QFutureWatcher>
+#include <QMainWindow>
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <QMainWindow>
-#include <QApplication>
+#include <QSqlTableModel>
+#include <QTableView>
 #include <QtConcurrent>
-#include <QFutureWatcher>
 
 #include <chrono>
 #include <iostream>
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     view->show();
     QSqlTableModel* model2 = new QSqlTableModel(nullptr, db);
 
-    QtConcurrent::run([&]() {model->select(); });
+    auto fut = QtConcurrent::run([&]() { model->select(); });
 
     //auto fut = [view, db, model2, &loading_stmt_complete]() {
     //    //std::this_thread::sleep_for(std::chrono::seconds{ 2 });

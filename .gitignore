@@ -5,4 +5,5 @@
 /.vs
 /out
 /build
-CmakeSettings.json
+CMakeSettings.json
+*.user

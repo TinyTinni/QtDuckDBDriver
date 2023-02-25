@@ -1,0 +1,3 @@
+[submodule "QtDuckDBDriver/duckdb"]
+	path = QtDuckDBDriver/duckdb
+	url = https://github.com/duckdb/duckdb.git

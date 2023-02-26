@@ -1,4 +1,4 @@
-# ![image](./logo/logo_64.png) Qt Driver Plugin for DuckDB
+# ![image](./logo/logo_96.png) Qt Driver Plugin for DuckDB
 Implements a [driver plugin for Qt's SQL Databases](https://doc.qt.io/qt-6/sql-driver.html) for [DuckDB](https://duckdb.org/).  
 Just copy the .dll/.so to your Qt plugin file and you can add a "DUCKDB" database.
 

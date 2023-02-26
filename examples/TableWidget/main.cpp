@@ -1,11 +1,7 @@
 #include <QApplication>
-#include <QFutureWatcher>
-#include <QMainWindow>
 #include <QSqlDatabase>
-#include <QSqlQuery>
 #include <QSqlTableModel>
 #include <QTableView>
-#include <QtConcurrent>
 
 int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);

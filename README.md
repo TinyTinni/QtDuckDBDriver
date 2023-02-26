@@ -2,6 +2,8 @@
 Implements a [driver plugin for Qt's SQL Databases](https://doc.qt.io/qt-6/sql-driver.html) for [DuckDB](https://duckdb.org/).  
 Just copy the .dll/.so to your Qt plugin file and you can add a "DUCKDB" database.
 
+It enables you to use duckdb in an easy way with Qt and Qt widgets, e.g. building a table widget [see TableWidget example](./examples/TableWidget).
+
 Exmaple for creating a in memory database:
 ```cpp
     QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
@@ -18,13 +20,16 @@ You can also use it to load csv or parquet (if duckdb was compiled with parquet 
 ```
 
 
-## Requires
-[DuckDB](https://duckdb.org/) >= 0.7.1 (Included in this repo as submodule. just select your version there)
+## Requirement
+[DuckDB](https://duckdb.org/) >= 0.7.1 (Included in this repo as submodule. just select your version there)  
 [Qt6](https://www.qt.io/) (Version 5 should be possible, just cmake needs some minor adjustments)
 
 DuckDB will be linked statically.  
-Please also have a look on what Qt version can load plugins build with a given Qt version: 
-[Qt Doc](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically)
+
+
+For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
+tl;dr: don't use the plugin on Qt version below the version it was build for.
+
 
 ## Known Limitations
 

@@ -6,21 +6,21 @@ It enables you to use duckdb in an easy way with Qt and Qt widgets, e.g. buildin
 
 Exmaple for creating a in memory database:
 ```cpp
-    QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
-	db.setDatabaseName("test.db"); // creates a persistent database file "test.db"
-	db.open(); 
-	db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
+QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
+db.setDatabaseName("test.db"); // creates a persistent database file "test.db"
+db.open(); 
+db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
 ```
 
 You can also use it to load csv or parquet (if duckdb was compiled with parquet support) files:
-```
-	QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
-	db.open(); // no database name given -> creates a in-memory database
-	db.exec("CREATE TABLE new_tbl AS SELECT * FROM read_csv_auto('my_csv.csv');";
+```cpp
+QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
+db.open(); // no database name given -> creates a in-memory database
+db.exec("CREATE TABLE new_tbl AS SELECT * FROM read_csv_auto('my_csv.csv');";
 ```
 
 
-## Requirement
+## Build requirements
 [DuckDB](https://duckdb.org/) >= 0.7.1 (Included in this repo as submodule. just select your version there)  
 [Qt6](https://www.qt.io/) (Version 5 should be possible, just cmake needs some minor adjustments)
 

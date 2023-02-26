@@ -9,7 +9,10 @@
 
 int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
+
+	QCoreApplication::addLibraryPath("./plugins/");
 	QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
+
 	db.open();
 	db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
 	db.exec("INSERT INTO employee VALUES ('Paul', 5000);");

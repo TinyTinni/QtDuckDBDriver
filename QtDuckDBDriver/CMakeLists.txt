@@ -15,6 +15,9 @@ target_include_directories(QtDuckDBDriver PRIVATE "${Qt6Sql_PRIVATE_INCLUDE_DIRS
 target_include_directories(QtDuckDBDriver PRIVATE "duckdb/tools/sqlite3_api_wrapper/include" "duckdb/tools/sqlite3_api_wrapper/sqlite3_udf_api/include")
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)#USE_DUCKDB_SHELL_WRAPPER  SQLITE_OMIT_LOAD_EXTENSION=1)
 set_property(TARGET QtDuckDBDriver PROPERTY AUTOMOC ON)
+set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")
+
+
 
 #if (ENABLE_SANITIZER)
 #    target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=address)

@@ -20,9 +20,7 @@ int main(int argc, char *argv[]) {
 	db.exec("INSERT INTO employee VALUES ('Tina', 6500);");
 
 	QSqlTableModel *model = new QSqlTableModel(nullptr, db);
-	auto tables = db.tables();
-	model->setTable(tables[0]);
-	model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+	model->setTable("employee");
 	model->select();
 
 	QTableView *view = new QTableView;

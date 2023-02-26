@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
 
-	QCoreApplication::addLibraryPath("./plugins/");
+	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath() + "/plugins/");
 	QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
 
 	db.open();

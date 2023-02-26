@@ -4,4 +4,3 @@
 
 QTEST_MAIN(SimpleTests)
 #include "moc_driver_tests.cpp"
-         "

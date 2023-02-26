@@ -31,11 +31,7 @@ For pre-build dlls, please choose the right version (See [Qt Doc about plugin ve
 tl;dr: don't use the plugin on Qt version below the version it was build for.
 
 
-## Known Limitations
-
-The function `QSqlDatabase::handle()` does not return a `duckdb::Connection` handle yet.
-
 ## License
 Based on [Qt's](https://www.qt.io/) sqlite driver code, which is licensed under the LGPL v3.  
-Based on [DuckDB](https://duckdb.org/) under the MIT license.
+Based on [DuckDB](https://duckdb.org/) under the MIT license.  
 [LGPL v3](./LICENSE)

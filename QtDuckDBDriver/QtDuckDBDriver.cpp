@@ -21,17 +21,19 @@
 #endif
 
 // #ifdef USE_DUCKDB_SHELL_WRAPPER
-#include "duckdb/tools/sqlite3_api_wrapper/include/duckdb_shell_wrapper.h"
+#include <duckdb_shell_wrapper.h>
 // #endif
-#include "duckdb/tools/sqlite3_api_wrapper/include/sqlite3.h"
-
 #include <functional>
+#include <sqlite3.h>
+#include <udf_struct_sqlite3.h>
 
-Q_DECLARE_OPAQUE_POINTER(sqlite3 *)
-Q_DECLARE_METATYPE(sqlite3 *)
+Q_DECLARE_OPAQUE_POINTER(DuckDBConnectionHandle *)
+Q_DECLARE_METATYPE(DuckDBConnectionHandle *)
 
-Q_DECLARE_OPAQUE_POINTER(sqlite3_stmt *)
-Q_DECLARE_METATYPE(sqlite3_stmt *)
+using DuckDBStmt = sqlite3_stmt;
+
+Q_DECLARE_OPAQUE_POINTER(DuckDBStmt *)
+Q_DECLARE_METATYPE(DuckDBStmt *)
 
 using namespace Qt::StringLiterals;
 
@@ -549,13 +551,6 @@ QVariant QDuckDBResult::handle() const {
 QDuckDBDriver::QDuckDBDriver(QObject *parent) : QSqlDriver(*new QDuckDBDriverPrivate, parent) {
 }
 
-QDuckDBDriver::QDuckDBDriver(sqlite3 *connection, QObject *parent) : QSqlDriver(*new QDuckDBDriverPrivate, parent) {
-	Q_D(QDuckDBDriver);
-	d->access = connection;
-	setOpen(true);
-	setOpenError(false);
-}
-
 QDuckDBDriver::~QDuckDBDriver() {
 	close();
 }
@@ -810,7 +805,8 @@ QSqlRecord QDuckDBDriver::record(const QString &tbl) const {
 
 QVariant QDuckDBDriver::handle() const {
 	Q_D(const QDuckDBDriver);
-	return QVariant::fromValue(d->access);
+	DuckDBConnectionHandle handle {d->access->db.get(), d->access->con.get()};
+	return QVariant::fromValue(handle);
 }
 
 QString QDuckDBDriver::escapeIdentifier(const QString &identifier, IdentifierType type) const {

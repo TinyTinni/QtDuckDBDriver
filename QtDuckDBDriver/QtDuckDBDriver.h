@@ -3,7 +3,15 @@
 #include <QSqlDriver>
 #include <QSqlDriverPlugin>
 
-struct sqlite3;
+namespace duckdb {
+class DuckDB;
+class Connection;
+} // namespace duckdb
+
+struct DuckDBConnectionHandle {
+	duckdb::DuckDB *db;
+	duckdb::Connection *connection;
+};
 
 #ifdef QT_PLUGIN
 #define Q_EXPORT_SQLDRIVER_DUCKDB
@@ -21,7 +29,6 @@ class Q_EXPORT_SQLDRIVER_DUCKDB QDuckDBDriver : public QSqlDriver {
 
 public:
 	explicit QDuckDBDriver(QObject *parent = nullptr);
-	explicit QDuckDBDriver(sqlite3 *connection, QObject *parent = nullptr);
 	~QDuckDBDriver();
 	bool hasFeature(DriverFeature f) const override;
 	bool open(const QString &db, const QString &user, const QString &password, const QString &host, int port,
@@ -35,6 +42,7 @@ public:
 
 	QSqlRecord record(const QString &tablename) const override;
 	QSqlIndex primaryIndex(const QString &table) const override;
+	/// return a DuckDBConnectionHandle
 	QVariant handle() const override;
 	QString escapeIdentifier(const QString &identifier, IdentifierType) const override;
 };

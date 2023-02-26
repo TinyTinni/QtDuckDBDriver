@@ -1,8 +1,12 @@
 #pragma once
+#include "../QtDuckDBDriver/QtDuckDBDriver.h"
+
 #include <QSqlDatabase>
+#include <QSqlDriver>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QTest>
+#include <duckdb.hpp>
 
 class SimpleTests : public QObject {
 	Q_OBJECT
@@ -113,7 +117,56 @@ private slots:
 		m_db.close();
 	}
 
+	void handleTest() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		auto handle = m_db.driver()->handle().value<DuckDBConnectionHandle>();
+		QCOMPARE_NE(handle.db, nullptr);
+		QCOMPARE_NE(handle.connection, nullptr);
+		auto result = handle.connection->SendQuery(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ))");
+		if (result->HasError())
+			qDebug() << result->GetError().c_str();
+		QVERIFY(!result->HasError());
+	}
+
 	void transactionTest() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		QVERIFY(m_db.transaction());
+		auto query = m_db.exec(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ); )");
+		checkError(query);
+		QVERIFY(m_db.commit());
+		auto tables = m_db.tables();
+		QCOMPARE(tables.size(), 1);
+	}
+
+	void rollbackTest() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		QVERIFY(m_db.transaction());
+		auto query = m_db.exec(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ); )");
+		checkError(query);
+		QVERIFY(m_db.rollback());
+		auto tables = m_db.tables();
+		QCOMPARE(tables.size(), 0);
 	}
 
 	void cleanupTestCase() {

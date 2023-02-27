@@ -103,7 +103,6 @@ public:
 	}
 	sqlite3 *access = nullptr;
 	QList<QDuckDBResult *> results;
-	QStringList notificationid;
 };
 
 class QDuckDBResultPrivate : public QSqlCachedResultPrivate {
@@ -640,11 +639,6 @@ void QDuckDBDriver::close() {
 	if (isOpen()) {
 		for (QDuckDBResult *result : std::as_const(d->results))
 			result->d_func()->finalize();
-
-		if (d->access && (d->notificationid.size() > 0)) {
-			d->notificationid.clear();
-			sqlite3_update_hook(d->access, nullptr, nullptr);
-		}
 
 		const int res = sqlite3_close(d->access);
 

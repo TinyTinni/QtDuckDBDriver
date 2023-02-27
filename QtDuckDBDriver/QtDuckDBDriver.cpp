@@ -92,7 +92,6 @@ protected:
 	QVariant lastInsertId() const override;
 	QSqlRecord record() const override;
 	void detachFromResultSet() override;
-	void virtual_hook(int id, void *data) override;
 };
 
 class QDuckDBDriverPrivate : public QSqlDriverPrivate {
@@ -300,10 +299,6 @@ QDuckDBResult::~QDuckDBResult() {
 	if (d->drv_d_func())
 		const_cast<QDuckDBDriverPrivate *>(d->drv_d_func())->results.removeOne(this);
 	d->cleanup();
-}
-
-void QDuckDBResult::virtual_hook(int id, void *data) {
-	QSqlCachedResult::virtual_hook(id, data);
 }
 
 bool QDuckDBResult::reset(const QString &query) {

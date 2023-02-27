@@ -6,11 +6,15 @@
    id="Ebene_1"
    x="0px"
    y="0px"
-   viewBox="0 0 996 166"
-   style="enable-background:new 0 0 996 166;"
+   viewBox="0 0 258.89999 164.2"
    xml:space="preserve"
    sodipodi:docname="DuckDB_Logo.svg"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:export-filename="DuckDB_Logo.png"
+   inkscape:export-xdpi="35.596756"
+   inkscape:export-ydpi="35.596756"
+   width="258.89999"
+   height="164.2"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -26,9 +30,9 @@
    inkscape:pagecheckerboard="0"
    inkscape:deskcolor="#505050"
    showgrid="false"
-   inkscape:zoom="4.2852375"
-   inkscape:cx="297.06638"
-   inkscape:cy="100.3445"
+   inkscape:zoom="6.060241"
+   inkscape:cx="180.68588"
+   inkscape:cy="82.33996"
    inkscape:window-width="3440"
    inkscape:window-height="1334"
    inkscape:window-x="-11"
@@ -44,9 +48,12 @@
 
 
 <path
-   d="m 231.1,53.6 h -38.7 v 58.8 h 38.7 c 16.2,0 29.4,-13.2 29.4,-29.4 0,-16.2 -13.2,-29.4 -29.4,-29.4"
+   d="m 229.5,52.7 h -38.7 v 58.8 h 38.7 c 16.2,0 29.4,-13.2 29.4,-29.4 0,-16.2 -13.2,-29.4 -29.4,-29.4"
    id="path200"
-   style="fill:#7cc040;fill-opacity:1" /><image
+   style="fill:#7cc040;fill-opacity:1"
+   inkscape:export-filename=".\path200.png"
+   inkscape:export-xdpi="189.84937"
+   inkscape:export-ydpi="189.84937" /><image
    width="164.2"
    height="164.2"
    preserveAspectRatio="none"
@@ -484,5 +491,5 @@ WHEAEHncuKfGRYaU1JbkHbdEES2B6/YToK8L9BWgL3b9EEEP/eSOQjEE3UXR04UWCaQPgN0HRDGA
 f7ZaR45OOpURAAAAAElFTkSuQmCC
 "
    id="image229"
-   x="1.6"
-   y="0.89999998" /></svg>
+   x="0"
+   y="0" /></svg>

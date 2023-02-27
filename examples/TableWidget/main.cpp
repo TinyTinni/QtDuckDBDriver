@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QSqlDatabase>
 #include <QSqlTableModel>
+#include <QSqlQuery>
 #include <QTableView>
 
 int main(int argc, char *argv[]) {

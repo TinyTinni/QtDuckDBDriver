@@ -26,23 +26,22 @@ In order to show a widget with a Sql content, you can use [`QSqlTableModel`](htt
 Here is an example on how to use the built-in Qt widget to show the contents of a DuckDB database in a grid widget
 
 ```cpp
+QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
+db.open();
+db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
+db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
+db.exec("INSERT INTO employee VALUES ('Paul', 5000);");
+db.exec("INSERT INTO employee VALUES ('Bert', 5500);");
+db.exec("INSERT INTO employee VALUES ('Tina', 6500);");
 
-	db.open();
-	db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
-  	db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
-	db.exec("INSERT INTO employee VALUES ('Paul', 5000);");
-	db.exec("INSERT INTO employee VALUES ('Bert', 5500);");
-	db.exec("INSERT INTO employee VALUES ('Tina', 6500);");
+QSqlTableModel *model = new QSqlTableModel(nullptr, db);
+model->setTable("employee");
+model->select();
 
-	QSqlTableModel *model = new QSqlTableModel(nullptr, db);
-	model->setTable("employee");
-	model->select();
-
-	QTableView *view = new QTableView;
-	view->setModel(model);
-	view->show();
+QTableView *view = new QTableView;
+view->setModel(model);
+view->show();
 ```
 
 Which results in the following widget:  
@@ -62,6 +61,8 @@ tl;dr: don't use the plugin on Qt version below the version it was build for.
 
 
 ## License
+[LGPL v3](./LICENSE)
+
 Based on [Qt's](https://www.qt.io/) sqlite driver code, which is licensed under the LGPL v3.  
 Based on [DuckDB](https://duckdb.org/) under the MIT license.  
-[LGPL v3](./LICENSE)
+

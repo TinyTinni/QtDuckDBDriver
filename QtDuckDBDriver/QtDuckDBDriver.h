@@ -42,7 +42,7 @@ public:
 
 	QSqlRecord record(const QString &tablename) const override;
 	QSqlIndex primaryIndex(const QString &table) const override;
-	/// return a DuckDBConnectionHandle
+	/// returns a DuckDBConnectionHandle
 	QVariant handle() const override;
 	QString escapeIdentifier(const QString &identifier, IdentifierType) const override;
 };

@@ -4,11 +4,13 @@
 #include <QSqlDatabase>
 #include <QSqlDriver>
 #include <QSqlError>
+#include <QSqlIndex>
 #include <QSqlQuery>
+#include <QSqlRecord>
 #include <QTest>
 #include <duckdb.hpp>
 
-class SimpleTests : public QObject {
+class QtDuckDBTests : public QObject {
 	Q_OBJECT
 
 private:
@@ -28,7 +30,12 @@ private slots:
 		m_db = QSqlDatabase::addDatabase("DUCKDB");
 	}
 
-	void simpleExecution() {
+	void cleanupTestCase() {
+		m_db.driver()->close();
+		QSqlDatabase::removeDatabase(m_db.connectionName());
+	}
+
+	void queryExecution() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
 		auto query = m_db.exec(R"(CREATE TABLE weather (
@@ -88,7 +95,7 @@ private slots:
 		m_db.close();
 	}
 
-	void tableFunctions() {
+	void tableEnumeration() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
 		QSqlQuery query(R"(CREATE TABLE weather (
@@ -169,6 +176,42 @@ private slots:
 		QCOMPARE(tables.size(), 0);
 	}
 
-	void cleanupTestCase() {
+	void recordTest() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		auto query = m_db.exec(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ); )");
+		checkError(query);
+		auto rec = m_db.driver()->record("weather");
+		QVERIFY(rec.count() == 5);
+		QVERIFY(rec.contains("city"));
+		QVERIFY(rec.contains("temp_lo"));
+		QVERIFY(rec.contains("temp_hi"));
+		QVERIFY(rec.contains("prcp"));
+		QVERIFY(rec.contains("date"));
+	}
+
+	void primaryIndexTest() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		auto query = m_db.exec(R"(CREATE TABLE weather (
+			id			   INT PRIMARY KEY,
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ); )");
+		checkError(query);
+		query = m_db.exec("CREATE UNIQUE INDEX city_idx ON weather(city)");
+		checkError(query);
+		auto idx = m_db.driver()->primaryIndex("weather");
+		QCOMPARE(idx.count(), 1);
+		QVERIFY(idx.contains("id"));
 	}
 };

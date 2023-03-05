@@ -17,3 +17,13 @@ add_custom_command(TARGET Example_TableWidget POST_BUILD COMMAND ${CMAKE_COMMAND
 add_custom_command(TARGET Example_TableWidget POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:QtDuckDBDriver> "$<TARGET_FILE_DIR:Example_TableWidget>/plugins/sqldrivers/")
 
+
+if (ENABLE_SANITIZER)
+    target_compile_options(Example_TableWidget PRIVATE -fsanitize=address)
+    target_link_options(Example_TableWidget PRIVATE -fsanitize=address)
+endif()
+
+if (ENABLE_UBSAN)
+    target_compile_options(Example_TableWidget PRIVATE -fsanitize=undefined)
+    target_link_options(Example_TableWidget PRIVATE -fsanitize=undefined)
+endif()

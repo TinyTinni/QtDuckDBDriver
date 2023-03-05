@@ -1,6 +1,11 @@
-﻿#include "QtDuckDBDriver.h"
+﻿
+// #ifdef USE_DUCKDB_SHELL_WRAPPER
+#include <duckdb_shell_wrapper.h>
+// #endif
+#include "QtDuckDBDriver.h"
 
 #include <QScopedValueRollback>
+#include <functional>
 #include <private/qsqlcachedresult_p.h>
 #include <private/qsqldriver_p.h>
 #include <qcoreapplication.h>
@@ -13,19 +18,14 @@
 #include <qsqlquery.h>
 #include <qstringlist.h>
 #include <qvariant.h>
+#include <sqlite3.h>
+#include <udf_struct_sqlite3.h>
 
 #if defined Q_OS_WIN
 #include <qt_windows.h>
 #else
 #include <unistd.h>
 #endif
-
-// #ifdef USE_DUCKDB_SHELL_WRAPPER
-#include <duckdb_shell_wrapper.h>
-// #endif
-#include <functional>
-#include <sqlite3.h>
-#include <udf_struct_sqlite3.h>
 
 Q_DECLARE_OPAQUE_POINTER(DuckDBConnectionHandle *)
 Q_DECLARE_METATYPE(DuckDBConnectionHandle *)
@@ -559,20 +559,15 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case PositionalPlaceholders:
 	case SimpleLocking:
 	case FinishQuery:
-	case LowPrecisionNumbers:
+	case NamedPlaceholders:
 		return true;
+	case LowPrecisionNumbers: // unsure
 	case EventNotifications:
 	case QuerySize:
 	case BatchOperations:
 	case MultipleResultSets:
 	case CancelQuery:
 		return false;
-	case NamedPlaceholders:
-#if (SQLITE_VERSION_NUMBER < 3003011)
-		return false;
-#else
-		return true;
-#endif
 	}
 	return false;
 }

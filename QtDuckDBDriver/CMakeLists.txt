@@ -19,12 +19,12 @@ set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")
 
 
 
-#if (ENABLE_SANITIZER)
-#    target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=address)
-#    target_link_options(QtDuckDBDriver PRIVATE -fsanitize=address)
-#endif()
-#
-#if (ENABLE_UBSAN)
-#    target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
-#    target_link_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
-#endif()
+if (ENABLE_SANITIZER)
+    target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=address)
+    target_link_options(QtDuckDBDriver PRIVATE -fsanitize=address)
+endif()
+
+if (ENABLE_UBSAN)
+    target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
+    target_link_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
+endif()

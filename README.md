@@ -30,7 +30,6 @@ QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
 
 db.open();
 db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
-db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
 db.exec("INSERT INTO employee VALUES ('Paul', 5000);");
 db.exec("INSERT INTO employee VALUES ('Bert', 5500);");
 db.exec("INSERT INTO employee VALUES ('Tina', 6500);");

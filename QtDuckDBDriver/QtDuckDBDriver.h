@@ -2,6 +2,7 @@
 
 #include <QSqlDriver>
 #include <QSqlDriverPlugin>
+#include <duckdb.hpp>
 
 namespace duckdb {
 class DuckDB;

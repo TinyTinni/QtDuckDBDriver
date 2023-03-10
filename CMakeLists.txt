@@ -1,9 +1,10 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.21)
+cmake_minimum_required (VERSION 3.23)
 
-project ("QtDuckDBDriver")
+set(CMAKE_PROJECT_INCLUDE_BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnableProjectCMP0048.cmake")
+project ("QtDuckDBDriver" VERSION 0.1.0) 
 
 option(BUILD_EXAMPLES OFF)
 

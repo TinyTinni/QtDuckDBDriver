@@ -31,12 +31,11 @@ if (ENABLE_UBSAN)
     target_link_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
 endif()
 
-install(TARGETS QtDuckDBDriver RUNTIME DESTINATION "${INSTALL_BINARY_DIR}")
-install(FILES "QtDuckDBDriver.h" DESTINATION "${INSTALL_INCLUDE_DIR}")
+install(TARGETS QtDuckDBDriver RUNTIME DESTINATION "bin")
+install(FILES "QtDuckDBDriver.h" DESTINATION "include")
 install(FILES ../README.md ../LICENSE DESTINATION ".")
-
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/QtDuckDBDriver/duckdb/src/include/"
-          DESTINATION "${INSTALL_INCLUDE_DIR}")
+          DESTINATION "include")
 include(CPack)
 
 ADD_CUSTOM_TARGET( bundle

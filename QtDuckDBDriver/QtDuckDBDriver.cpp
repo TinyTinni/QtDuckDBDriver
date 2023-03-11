@@ -546,7 +546,7 @@ QDuckDBDriver::QDuckDBDriver(QObject *parent) : QSqlDriver(*new QDuckDBDriverPri
 }
 
 QDuckDBDriver::~QDuckDBDriver() {
-	close();
+	QDuckDBDriver::close();
 }
 
 bool QDuckDBDriver::hasFeature(DriverFeature f) const {

@@ -3,6 +3,9 @@
 ################################################################################
 
 /.vs
+/.vscode
+/.cache
 /out
 /build
-CmakeSettings.json
+CMakeSettings.json
+*.user

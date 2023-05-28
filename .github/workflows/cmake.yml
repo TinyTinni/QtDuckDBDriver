@@ -28,10 +28,12 @@ jobs:
         version: '6.*'
         target: 'desktop'
         setup-python: 'false'
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure CMake
       # disable sanitizers as there are problems during the test. Needs to be investigated. (Mainly ODR violations)
-      run: cmake -B ${{github.workspace}}/build -G 'ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       # Build your program with the given configuration

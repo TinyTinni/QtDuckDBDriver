@@ -28,22 +28,35 @@ jobs:
         version: '6.*'
         target: 'desktop'
         setup-python: 'false'
-        
-    - name: Install Ninja
-      shell: bash
-      run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
+        modules: 'qtsql'
+
+    #- name: Install Ninja
+    #  shell: bash
+    #  run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
 
     - name: Configure CMake
-      # disable sanitizers as there are problems during the test. Needs to be investigated. (Mainly ODR violations)
-      run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    #  run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build Tests
-      # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t driver_tests
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+    
+    - name: Pack
+      if: matrix.os == 'windows-latest'
+      shell: cmd
+      run: |
+        cmake --build ${{github.workspace}}/build -t bundle
+        dir
+    
+    #- name: Upload artifacts
+    #  if: matrix.os == 'windows-latest'
+    #  uses: actions/upload-artifact@v3
+    #  path: ${{github.workspace}}/
+
+
 

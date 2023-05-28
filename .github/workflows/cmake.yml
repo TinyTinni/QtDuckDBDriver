@@ -32,7 +32,7 @@ jobs:
         setup-python: 'false'
 
     - name: Install Ninja
-      if: matrix.os != 'windows-latest'
+      if: matrix.config.os != 'windows-latest'
       shell: bash
       run: ${{ matrix.config.os == 'matrix.config.os' && 'brew install ninja' || matrix.config.os == 'ubuntu-latest' && 'sudo apt-get install ninja-build' }}
 
@@ -47,13 +47,13 @@ jobs:
     
     # Create package as artifact
     #- name: Pack
-    #  if: matrix.os == 'windows-latest'
+    #  if: matrix.config.os == 'windows-latest'
     #  shell: cmd
     #  run: |
     #    cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
     
     #- name: Upload artifacts
-    #  if: matrix.os == 'windows-latest'
+    #  if: matrix.config.os == 'windows-latest'
     #  uses: actions/upload-artifact@v3
     #  path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
 

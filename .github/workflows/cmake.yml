@@ -32,6 +32,7 @@ jobs:
         setup-python: 'false'
 
     - name: Install Ninja
+      if: matrix.os != 'windows-latest'
       shell: bash
       run: ${{ matrix.config.os == 'matrix.config.os' && 'brew install ninja' || matrix.config.os == 'ubuntu-latest' && 'sudo apt-get install ninja-build' }}
 

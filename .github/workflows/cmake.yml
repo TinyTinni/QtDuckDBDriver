@@ -50,7 +50,7 @@ jobs:
     #  run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build Tests
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j {{steps.cpus.outputs.count}} -t driver_tests
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{steps.cpus.outputs.count}} -t driver_tests
 
     - name: Test
       working-directory: ${{github.workspace}}/build
@@ -60,7 +60,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: cmd
       run: |
-        cmake --build ${{github.workspace}}/build -t bundle
+        cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
         dir
     
     #- name: Upload artifacts

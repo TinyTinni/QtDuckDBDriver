@@ -14,10 +14,11 @@ jobs:
    build:
     strategy:
       matrix:
-        - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
-        - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G ninja" }
-        - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G ninja" }
-    runs-on: ${{ matrix.os }}
+        config:
+          - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
+          - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G ninja" }
+          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G ninja" }
+    runs-on: ${{ matrix.config.os }}
 
     steps:
     - uses: actions/checkout@v3
@@ -47,7 +48,7 @@ jobs:
     #  shell: python
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build ${{matrix.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build ${{matrix.config.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     #  run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 

@@ -33,13 +33,24 @@ jobs:
     #  shell: bash
     #  run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
 
+    - name: Get the number of CPUs that the current process has access to.
+      id: cpus
+      run: |
+        from os import environ, sched_getaffinity
+
+        num_cpus = len(sched_getaffinity(0))
+        output_file = environ["GITHUB_OUTPUT"]
+        with open(output_file, "a", encoding="utf-8") as output_stream:
+            output_stream.write(f"count={num_cpus}\n")
+      shell: python
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     #  run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build Tests
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t driver_tests
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j {{steps.cpus.outputs.count}} -t driver_tests
 
     - name: Test
       working-directory: ${{github.workspace}}/build

@@ -14,7 +14,9 @@ jobs:
    build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
+        - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G ninja" }
+        - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G ninja" }
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -29,24 +31,23 @@ jobs:
         target: 'desktop'
         setup-python: 'false'
 
-    #- name: Install Ninja
-    #  shell: bash
-    #  run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
+    - name: Install Ninja
+      shell: bash
+      run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
 
-    - name: Get the number of CPUs that the current process has access to.
-      id: cpus
-      run: |
-        from os import environ
-        import multiprocessing
-
-        num_cpus = multiprocessing.cpu_count()
-        output_file = environ["GITHUB_OUTPUT"]
-        with open(output_file, "a", encoding="utf-8") as output_stream:
-            output_stream.write("count={}\n".format(num_cpus))
-      shell: python
+    #- name: Get the number of CPUs that the current process has access to.
+    #  id: cpuslen(sched_getaffinity(0))
+    #  run: |
+    #    from os import environ
+    #    import multiprocessing
+    #    num_cpus = multiprocessing.cpu_count()
+    #    output_file = environ[len(sched_getaffinity(0))"GITHUB_OUTPUT"]
+    #    with open(output_file, "a", encodlen(sched_getaffinity(0))ing="utf-8") as output_stream:
+    #        output_stream.wrlen(sched_getaffinity(0))ite(f"count={num_cpus}\n")
+    #  shell: python
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build ${{build.matrix.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     #  run: cmake -B ${{github.workspace}}/build -G 'Ninja' -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 

@@ -36,9 +36,10 @@ jobs:
     - name: Get the number of CPUs that the current process has access to.
       id: cpus
       run: |
-        from os import environ, sched_getaffinity
+        from os import environ
+        import multiprocessing
 
-        num_cpus = len(sched_getaffinity(0))
+        num_cpus = multiprocessing.cpu_count()
         output_file = environ["GITHUB_OUTPUT"]
         with open(output_file, "a", encoding="utf-8") as output_stream:
             output_stream.write(f"count={num_cpus}\n")

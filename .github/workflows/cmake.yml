@@ -28,8 +28,10 @@ jobs:
         version: '6.*'
         target: 'desktop'
         setup-python: 'false'
+        
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+      shell: bash
+      run: ${{ runner.os == 'macOS' && 'brew install ninja' || runner.os == 'Windows' && 'choco install ninja' || 'sudo apt-get install ninja-build' }}
 
     - name: Configure CMake
       # disable sanitizers as there are problems during the test. Needs to be investigated. (Mainly ODR violations)

@@ -28,7 +28,6 @@ jobs:
         version: '6.*'
         target: 'desktop'
         setup-python: 'false'
-        modules: 'qtsql'
 
     #- name: Install Ninja
     #  shell: bash

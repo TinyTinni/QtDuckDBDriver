@@ -3,6 +3,7 @@
 #
 
 find_package(Qt6 REQUIRED COMPONENTS Sql)
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 
 add_subdirectory(duckdb)
 

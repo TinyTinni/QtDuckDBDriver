@@ -119,6 +119,7 @@ private slots:
 
 		auto tables = m_db.tables();
 		QCOMPARE(tables.size(), 2);
+		tables.sort();
 		QCOMPARE(tables[0], "weather");
 		QCOMPARE(tables[1], "weather2");
 		m_db.close();

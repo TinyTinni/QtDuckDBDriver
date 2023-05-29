@@ -1,0 +1,61 @@
+name: CMake
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+   build:
+    strategy:
+      matrix:
+        config:
+          - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
+          - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G Ninja" }
+          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G Ninja" }
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.*'
+        target: 'desktop'
+        setup-python: 'false'
+
+    - name: Install Ninja
+      if: matrix.config.os != 'windows-latest'
+      shell: bash
+      run: ${{ matrix.config.os == 'macos-latest' && 'brew install ninja' || matrix.config.os == 'ubuntu-latest' && 'sudo apt-get install ninja-build' }}
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build ${{matrix.config.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    - name: Build Tests
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{steps.cpus.outputs.count}} -t driver_tests
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+    
+    # Create package as artifact
+    #- name: Pack
+    #  if: matrix.config.os == 'windows-latest'
+    #  shell: cmd
+    #  run: |
+    #    cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
+    
+    #- name: Upload artifacts
+    #  if: matrix.config.os == 'windows-latest'
+    #  uses: actions/upload-artifact@v3
+    #  path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
+
+
+

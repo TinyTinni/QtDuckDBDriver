@@ -46,16 +46,16 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
     
     # Create package as artifact
-    #- name: Pack
-    #  if: matrix.config.os == 'windows-latest'
-    #  shell: cmd
-    #  run: |
-    #    cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
+    - name: Pack
+      if: matrix.config.os == 'windows-latest'
+      shell: cmd
+      run: |
+        cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
     
-    #- name: Upload artifacts
-    #  if: matrix.config.os == 'windows-latest'
-    #  uses: actions/upload-artifact@v3
-    #  path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
+    - name: Upload artifacts
+      if: matrix.config.os == 'windows-latest'
+      uses: actions/upload-artifact@v3
+      path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
 
 
 

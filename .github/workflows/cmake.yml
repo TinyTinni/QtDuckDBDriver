@@ -50,7 +50,7 @@ jobs:
       if: matrix.config.os == 'windows-latest'
       shell: cmd
       run: |
-        cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}/build -t bundle --config ${{env.BUILD_TYPE}}
     
     - name: Upload artifacts
       if: matrix.config.os == 'windows-latest'

@@ -16,7 +16,7 @@ jobs:
         config:
           - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
           - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G Ninja" }
-          - { name: "MacOS clang", os: matrix.config.os, cmake_gen: "-G Ninja" }
+          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G Ninja" }
     runs-on: ${{ matrix.config.os }}
 
     steps:

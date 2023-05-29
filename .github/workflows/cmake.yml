@@ -55,7 +55,9 @@ jobs:
     - name: Upload artifacts
       if: matrix.config.os == 'windows-latest'
       uses: actions/upload-artifact@v3
-      path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
+      with:
+        name: Windows-Dll
+        path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
 
 
 

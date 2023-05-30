@@ -57,7 +57,13 @@ DuckDB will be linked statically.
 
 
 For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
-tl;dr: don't use the plugin on Qt version below the version it was build for.
+*tl;dr*: don't use the plugin on Qt version below the version it was build for.
+
+
+## Prebuild MSVC DLL in the artifacts
+[Github Actions](https://github.com/TinyTinni/QtDuckDBDriver/actions) will offer a MSVC DLL in the artifacts.
+
+The artifact might be expired, but you can just fork this project and start the action on your own. This DLL in the qt plugin directory is all you need to use it, but I would also recommend the header, when you want to have direct access to the DuckDB C++ API. 
 
 
 ## License

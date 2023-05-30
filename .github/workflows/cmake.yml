@@ -37,7 +37,7 @@ jobs:
       run: ${{ matrix.config.os == 'macos-latest' && 'brew install ninja' || matrix.config.os == 'ubuntu-latest' && 'sudo apt-get install ninja-build' }}
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build ${{matrix.config.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build ${{matrix.config.cmake_gen}} -DENABLE_SANITIZER=0 -DENABLE_UBSAN=0 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
     - name: Build Tests
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{steps.cpus.outputs.count}} -t driver_tests
 
@@ -46,16 +46,19 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
     
     # Create package as artifact
-    #- name: Pack
-    #  if: matrix.config.os == 'windows-latest'
-    #  shell: cmd
-    #  run: |
-    #    cmake --build ${{github.workspace}}/build -t bundle -C --config ${{env.BUILD_TYPE}}
+    - name: Pack
+      if: matrix.config.os == 'windows-latest'
+      shell: cmd
+      run: |
+        cmake --build ${{github.workspace}}/build -t install --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}/build -t bundle --config ${{env.BUILD_TYPE}}
     
-    #- name: Upload artifacts
-    #  if: matrix.config.os == 'windows-latest'
-    #  uses: actions/upload-artifact@v3
-    #  path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
+    - name: Upload artifacts
+      if: matrix.config.os == 'windows-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: Windows-QtDuckDBDriver-DLL
+        path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
 
 
 

@@ -14,10 +14,10 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cmake_gen: "", qt_version: "6.*"}
-          - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
-          - { name: "Ubuntu qt5", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "5.*" }
-          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
+          - { name: "Windows Qt6 MSVC", os: windows-latest, cmake_gen: "", qt_version: "6.*"}
+          - { name: "Ubuntu Qt6 gcc", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
+          - { name: "Ubuntu Qt5", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "5.*" }
+          - { name: "MacOS Qt6 clang", os: macos-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
     runs-on: ${{ matrix.config.os }}
 
     steps:

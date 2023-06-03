@@ -5,7 +5,9 @@
 find_package(Qt6 QUIET COMPONENTS Sql)
 if (NOT ${Qt6_FOUND})
   find_package(Qt5 REQUIRED COMPONENTS Sql)
-  message(FATAL_ERROR "Cannot find qt6 or qt5")
+  if (NOT ${Qt5_FOUND})
+    message(FATAL_ERROR "Cannot find qt6 or qt5")
+  endif()
 endif()
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 

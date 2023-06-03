@@ -7,7 +7,6 @@ if (NOT ${Qt6_FOUND})
   endif()
 endif()
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
-qt_standard_project_setup()
 
 add_executable(driver_tests "driver_tests.h" "main.cpp")
 add_test(NAME driver_tests COMMAND driver_tests)

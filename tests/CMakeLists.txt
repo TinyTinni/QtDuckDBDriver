@@ -1,5 +1,10 @@
 
-find_package(Qt6 REQUIRED COMPONENTS Test Sql)
+find_package(Qt6 QUIET COMPONENTS Test Sql )
+if (NOT ${Qt6_FOUND})
+  find_package(Qt5 REQUIRED COMPONENTS Test Sql)
+  message(FATAL_ERROR "Cannot find qt6 or qt5")
+endif()
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 qt_standard_project_setup()
 
 add_executable(driver_tests "driver_tests.h" "main.cpp")

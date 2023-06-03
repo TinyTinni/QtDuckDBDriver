@@ -14,9 +14,10 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cmake_gen: ""}
-          - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G Ninja" }
-          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G Ninja" }
+          - { name: "Windows MSVC", os: windows-latest, cmake_gen: "", qt_version: "6.*"}
+          - { name: "Ubuntu gcc", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
+          - { name: "Ubuntu qt5", os: ubuntu-latest, cmake_gen: "-G Ninja", qt_version: "5.*" }
+          - { name: "MacOS clang", os: macos-latest, cmake_gen: "-G Ninja", qt_version: "6.*" }
     runs-on: ${{ matrix.config.os }}
 
     steps:
@@ -27,7 +28,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.*'
+        version: ${{ matrix.config.qt_version }}
         target: 'desktop'
         setup-python: 'false'
 

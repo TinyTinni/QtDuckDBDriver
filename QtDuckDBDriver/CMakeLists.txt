@@ -2,7 +2,11 @@
 # project specific logic here.
 #
 
-find_package(Qt6 REQUIRED COMPONENTS Sql)
+find_package(Qt6 QUIET COMPONENTS Sql)
+if (NOT ${Qt6_FOUND})
+  find_package(Qt5 REQUIRED COMPONENTS Sql)
+  message(FATAL_ERROR "Cannot find qt6 or qt5")
+endif()
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 
 add_subdirectory(duckdb)
@@ -11,7 +15,7 @@ add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 14)
-target_link_libraries(QtDuckDBDriver PUBLIC Qt6::Sql duckdb_static)
+target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static)
 target_link_libraries(QtDuckDBDriver PRIVATE sqlite3_api_wrapper_static ${DUCKDB_EXTRA_LINK_FLAGS})
 target_include_directories(QtDuckDBDriver PRIVATE "${Qt6Sql_PRIVATE_INCLUDE_DIRS}")
 target_include_directories(QtDuckDBDriver PRIVATE "duckdb/tools/sqlite3_api_wrapper/include" "duckdb/tools/sqlite3_api_wrapper/sqlite3_udf_api/include")

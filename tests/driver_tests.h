@@ -95,6 +95,48 @@ private slots:
 		m_db.close();
 	}
 
+	void preparedExecutionNamedPlaceholders() {
+		bool ok = m_db.open();
+		QVERIFY(ok);
+		QSqlQuery query(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ))",
+		                m_db);
+		checkError(query);
+
+		auto features = m_db.driver()->hasFeature(QSqlDriver::NamedPlaceholders);
+
+		QSqlQuery prepared_query;
+		bool prepared = prepared_query.prepare(
+		    R"(INSERT INTO weather (city, temp_lo, temp_hi, prcp, date) VALUES (:city, :temp_lo, :temp_hi, :prcp, :date))");
+		prepared_query.bindValue(":city", "San Francisco");
+		prepared_query.bindValue(":temp_lo", 46);
+		prepared_query.bindValue(":temp_hi", 50);
+		prepared_query.bindValue(":prcp", 0.25);
+		prepared_query.bindValue(":date", "1994-11-27");
+		prepared_query.exec();
+		checkError(prepared_query);
+
+		prepared_query.bindValue(":city", "San Francisco2");
+		prepared_query.bindValue(1, 80);
+		prepared_query.bindValue(2, 90);
+		prepared_query.bindValue(":prcp", 0.5);
+		prepared_query.bindValue(4, "2012-12-01");
+		prepared_query.exec();
+		checkError(prepared_query);
+
+		query = m_db.exec(R"(SELECT COUNT(*) FROM weather)");
+		checkError(query);
+		while (query.next()) {
+			QCOMPARE(query.value(0).toInt(), 2);
+		}
+		m_db.close();
+	}
+
 	void tableEnumeration() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
@@ -214,5 +256,13 @@ private slots:
 		auto idx = m_db.driver()->primaryIndex("weather");
 		QCOMPARE(idx.count(), 1);
 		QVERIFY(idx.contains("id"));
+	}
+
+	void handleTypeTest() {
+		QVERIFY(m_db.open());
+		auto driver = dynamic_cast<QDuckDBDriver *>(m_db.driver());
+		QVERIFY(driver != nullptr);
+		QVERIFY(driver->handle().canConvert<DuckDBConnectionHandle>());
+		auto handle = driver->handle().value<DuckDBConnectionHandle>();
 	}
 };

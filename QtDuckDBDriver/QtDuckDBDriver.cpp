@@ -1,4 +1,4 @@
-﻿
+
 // #ifdef USE_DUCKDB_SHELL_WRAPPER
 #include <duckdb_shell_wrapper.h>
 // #endif
@@ -559,8 +559,8 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case PositionalPlaceholders:
 	case SimpleLocking:
 	case FinishQuery:
-	case NamedPlaceholders:
 		return true;
+	case NamedPlaceholders:
 	case LowPrecisionNumbers: // unsure
 	case EventNotifications:
 	case QuerySize:

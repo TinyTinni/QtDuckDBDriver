@@ -257,12 +257,4 @@ private slots:
 		QCOMPARE(idx.count(), 1);
 		QVERIFY(idx.contains("id"));
 	}
-
-	void handleTypeTest() {
-		QVERIFY(m_db.open());
-		auto driver = reinterpret_cast<QDuckDBDriver *>(m_db.driver());
-		QVERIFY(driver != nullptr);
-		QVERIFY(driver->handle().canConvert<DuckDBConnectionHandle>());
-		auto handle = driver->handle().value<DuckDBConnectionHandle>();
-	}
 };

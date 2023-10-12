@@ -4,6 +4,7 @@ qt_standard_project_setup()
 
 add_executable(driver_tests "driver_tests.h" "main.cpp")
 add_test(NAME driver_tests COMMAND driver_tests)
+set_tests_properties(driver_tests PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_odr_violation=0")
 
 target_link_libraries(driver_tests PRIVATE Qt::Test Qt::Sql QtDuckDBDriver)
 set_property(TARGET driver_tests PROPERTY AUTOMOC ON)

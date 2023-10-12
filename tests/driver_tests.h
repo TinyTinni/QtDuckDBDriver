@@ -32,7 +32,6 @@ private slots:
 
 	void cleanupTestCase() {
 		m_db.driver()->close();
-		QSqlDatabase::removeDatabase(m_db.connectionName());
 	}
 
 	void queryExecution() {

@@ -20,13 +20,15 @@ add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E ma
 add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:QtDuckDBDriver> "$<TARGET_FILE_DIR:driver_tests>/plugins/sqldrivers/")
 
-if (ENABLE_SANITIZER)
-    target_compile_options(driver_tests PRIVATE -fsanitize=address)
-    target_link_options(driver_tests PRIVATE -fsanitize=address)
-endif()
+if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build
+    if (ENABLE_SANITIZER)
+        target_compile_options(driver_tests PRIVATE -fsanitize=address)
+        target_link_options(driver_tests PRIVATE -fsanitize=address)
+    endif()
 
-if (ENABLE_UBSAN)
-    target_compile_options(driver_tests PRIVATE -fsanitize=undefined)
-    target_link_options(driver_tests PRIVATE -fsanitize=undefined)
-endif()
+    if (ENABLE_UBSAN)
+        target_compile_options(driver_tests PRIVATE -fsanitize=undefined)
+        target_link_options(driver_tests PRIVATE -fsanitize=undefined)
+    endif()
+endif(WIN32)
 

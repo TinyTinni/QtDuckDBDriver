@@ -2,7 +2,6 @@
 
 #include <QSqlDriver>
 #include <QSqlDriverPlugin>
-#include <duckdb.hpp>
 
 namespace duckdb {
 class DuckDB;
@@ -25,7 +24,6 @@ class QDuckDBDriverPrivate;
 
 class Q_EXPORT_SQLDRIVER_DUCKDB QDuckDBDriver : public QSqlDriver {
 	Q_DECLARE_PRIVATE(QDuckDBDriver);
-	Q_OBJECT;
 	friend class QDuckDBResultPrivate;
 
 public:

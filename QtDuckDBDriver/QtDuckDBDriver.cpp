@@ -796,5 +796,3 @@ QVariant QDuckDBDriver::handle() const {
 QString QDuckDBDriver::escapeIdentifier(const QString &identifier, IdentifierType type) const {
 	return _q_escapeIdentifier(identifier, type);
 }
-
-#include "moc_QtDuckDBDriver.cpp"

@@ -38,7 +38,8 @@ private slots:
 	void queryExecution() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
-		auto query = m_db.exec(R"(CREATE TABLE weather (
+		QSqlQuery query(m_db);
+		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
             temp_hi        INTEGER,
@@ -47,10 +48,10 @@ private slots:
         ); )");
 		checkError(query);
 
-		query = m_db.exec(R"( INSERT INTO weather VALUES ('San Francisco', 46, 50, 0.25, '1994-11-27'); )");
+		query.exec(R"( INSERT INTO weather VALUES ('San Francisco', 46, 50, 0.25, '1994-11-27'); )");
 		checkError(query);
 
-		query = m_db.exec(R"(SELECT COUNT(*) FROM weather)");
+		query.exec(R"(SELECT COUNT(*) FROM weather)");
 		checkError(query);
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 1);
@@ -87,7 +88,7 @@ private slots:
 		prepared_query.exec();
 		checkError(prepared_query);
 
-		query = m_db.exec(R"(SELECT COUNT(*) FROM weather)");
+		query.exec(R"(SELECT COUNT(*) FROM weather)");
 		checkError(query);
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 2);
@@ -129,7 +130,7 @@ private slots:
 		prepared_query.exec();
 		checkError(prepared_query);
 
-		query = m_db.exec(R"(SELECT COUNT(*) FROM weather)");
+		query.exec(R"(SELECT COUNT(*) FROM weather)");
 		checkError(query);
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 2);
@@ -189,7 +190,8 @@ private slots:
 		bool ok = m_db.open();
 		QVERIFY(ok);
 		QVERIFY(m_db.transaction());
-		auto query = m_db.exec(R"(CREATE TABLE weather (
+		QSqlQuery query(m_db);
+		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
             temp_hi        INTEGER,
@@ -206,7 +208,8 @@ private slots:
 		bool ok = m_db.open();
 		QVERIFY(ok);
 		QVERIFY(m_db.transaction());
-		auto query = m_db.exec(R"(CREATE TABLE weather (
+		QSqlQuery query(m_db);
+		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
             temp_hi        INTEGER,
@@ -222,7 +225,8 @@ private slots:
 	void recordTest() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
-		auto query = m_db.exec(R"(CREATE TABLE weather (
+		QSqlQuery query(m_db);
+		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
             temp_hi        INTEGER,
@@ -242,7 +246,8 @@ private slots:
 	void primaryIndexTest() {
 		bool ok = m_db.open();
 		QVERIFY(ok);
-		auto query = m_db.exec(R"(CREATE TABLE weather (
+		QSqlQuery query(m_db);
+		query.exec(R"(CREATE TABLE weather (
 			id			   INT PRIMARY KEY,
             city           VARCHAR,
             temp_lo        INTEGER, 

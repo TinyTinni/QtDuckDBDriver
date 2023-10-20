@@ -256,7 +256,7 @@ private slots:
             date           DATE
         ); )");
 		checkError(query);
-		query = m_db.exec("CREATE UNIQUE INDEX city_idx ON weather(city)");
+		query.exec("CREATE UNIQUE INDEX city_idx ON weather(city)");
 		checkError(query);
 		auto idx = m_db.driver()->primaryIndex("weather");
 		QCOMPARE(idx.count(), 1);

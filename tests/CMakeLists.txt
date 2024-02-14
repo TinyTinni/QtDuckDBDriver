@@ -30,5 +30,5 @@ if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build
         target_compile_options(driver_tests PRIVATE -fsanitize=undefined)
         target_link_options(driver_tests PRIVATE -fsanitize=undefined)
     endif()
-endif(WIN32)
+endif(NOT WIN32)
 

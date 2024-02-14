@@ -32,7 +32,7 @@ if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build
         target_compile_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
         target_link_options(QtDuckDBDriver PRIVATE -fsanitize=undefined)
     endif()
-endif(WIN32)
+endif(NOT WIN32)
 
 install(TARGETS QtDuckDBDriver RUNTIME DESTINATION "bin")
 install(FILES "QtDuckDBDriver.h" DESTINATION "include")

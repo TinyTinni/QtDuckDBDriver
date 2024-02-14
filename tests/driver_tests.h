@@ -9,6 +9,7 @@
 #include <QSqlRecord>
 #include <QTest>
 #include <duckdb.hpp>
+#include <memory>
 
 class QtDuckDBTests : public QObject {
 	Q_OBJECT
@@ -22,23 +23,23 @@ private:
 		}
 	}
 
-	QSqlDatabase m_db;
+	std::unique_ptr<QSqlDatabase> m_db;
 
 private slots:
 	void initTestCase() {
 		QCoreApplication::addLibraryPath("./plugins/");
-		m_db = QSqlDatabase::addDatabase("DUCKDB");
+		m_db = std::make_unique<QSqlDatabase>(QSqlDatabase::addDatabase("DUCKDB"));
 	}
 
 	void cleanupTestCase() {
-		m_db.driver()->close();
-		QSqlDatabase::removeDatabase(m_db.connectionName());
+		m_db.reset();
+		QSqlDatabase::removeDatabase("DUCKDB");
 	}
 
 	void queryExecution() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		QSqlQuery query(m_db);
+		QSqlQuery query(*m_db);
 		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
@@ -59,7 +60,7 @@ private slots:
 	}
 
 	void preparedExecution() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
 		QSqlQuery query(R"(CREATE TABLE weather (
             city           VARCHAR,
@@ -68,7 +69,7 @@ private slots:
             prcp           REAL,
             date           DATE
         ))",
-		                m_db);
+		                *m_db);
 		checkError(query);
 
 		auto prepared_query = QSqlQuery(R"(INSERT INTO weather VALUES (?, ?, ?, ?, ?))");
@@ -93,11 +94,11 @@ private slots:
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 2);
 		}
-		m_db.close();
+		m_db->close();
 	}
 
 	void preparedExecutionNamedPlaceholders() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
 		QSqlQuery query(R"(CREATE TABLE weather (
             city           VARCHAR,
@@ -106,10 +107,10 @@ private slots:
             prcp           REAL,
             date           DATE
         ))",
-		                m_db);
+		                *m_db);
 		checkError(query);
 
-		auto features = m_db.driver()->hasFeature(QSqlDriver::NamedPlaceholders);
+		auto features = m_db->driver()->hasFeature(QSqlDriver::NamedPlaceholders);
 
 		QSqlQuery prepared_query;
 		bool prepared = prepared_query.prepare(
@@ -135,11 +136,11 @@ private slots:
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 2);
 		}
-		m_db.close();
+		m_db->close();
 	}
 
 	void tableEnumeration() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
 		QSqlQuery query(R"(CREATE TABLE weather (
             city           VARCHAR,
@@ -148,7 +149,7 @@ private slots:
             prcp           REAL,
             date           DATE
         ))",
-		                m_db);
+		                *m_db);
 		checkError(query);
 		query = QSqlQuery(R"(CREATE TABLE weather2 (
             city           VARCHAR,
@@ -157,21 +158,21 @@ private slots:
             prcp           REAL,
             date           DATE
         ))",
-		                  m_db);
+		                  *m_db);
 		checkError(query);
 
-		auto tables = m_db.tables();
+		auto tables = m_db->tables();
 		QCOMPARE(tables.size(), 2);
 		tables.sort();
 		QCOMPARE(tables[0], "weather");
 		QCOMPARE(tables[1], "weather2");
-		m_db.close();
+		m_db->close();
 	}
 
 	void handleTest() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		auto handle = m_db.driver()->handle().value<DuckDBConnectionHandle>();
+		auto handle = m_db->driver()->handle().value<DuckDBConnectionHandle>();
 		QCOMPARE_NE(handle.db, nullptr);
 		QCOMPARE_NE(handle.connection, nullptr);
 		auto result = handle.connection->SendQuery(R"(CREATE TABLE weather (
@@ -187,10 +188,10 @@ private slots:
 	}
 
 	void transactionTest() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		QVERIFY(m_db.transaction());
-		QSqlQuery query(m_db);
+		QVERIFY(m_db->transaction());
+		QSqlQuery query(*m_db);
 		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
@@ -199,16 +200,16 @@ private slots:
             date           DATE
         ); )");
 		checkError(query);
-		QVERIFY(m_db.commit());
-		auto tables = m_db.tables();
+		QVERIFY(m_db->commit());
+		auto tables = m_db->tables();
 		QCOMPARE(tables.size(), 1);
 	}
 
 	void rollbackTest() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		QVERIFY(m_db.transaction());
-		QSqlQuery query(m_db);
+		QVERIFY(m_db->transaction());
+		QSqlQuery query(*m_db);
 		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
@@ -217,15 +218,15 @@ private slots:
             date           DATE
         ); )");
 		checkError(query);
-		QVERIFY(m_db.rollback());
-		auto tables = m_db.tables();
+		QVERIFY(m_db->rollback());
+		auto tables = m_db->tables();
 		QCOMPARE(tables.size(), 0);
 	}
 
 	void recordTest() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		QSqlQuery query(m_db);
+		QSqlQuery query(*m_db);
 		query.exec(R"(CREATE TABLE weather (
             city           VARCHAR,
             temp_lo        INTEGER, 
@@ -234,7 +235,7 @@ private slots:
             date           DATE
         ); )");
 		checkError(query);
-		auto rec = m_db.driver()->record("weather");
+		auto rec = m_db->driver()->record("weather");
 		QVERIFY(rec.count() == 5);
 		QVERIFY(rec.contains("city"));
 		QVERIFY(rec.contains("temp_lo"));
@@ -244,9 +245,9 @@ private slots:
 	}
 
 	void primaryIndexTest() {
-		bool ok = m_db.open();
+		bool ok = m_db->open();
 		QVERIFY(ok);
-		QSqlQuery query(m_db);
+		QSqlQuery query(*m_db);
 		query.exec(R"(CREATE TABLE weather (
 			id			   INT PRIMARY KEY,
             city           VARCHAR,
@@ -258,7 +259,7 @@ private slots:
 		checkError(query);
 		query.exec("CREATE UNIQUE INDEX city_idx ON weather(city)");
 		checkError(query);
-		auto idx = m_db.driver()->primaryIndex("weather");
+		auto idx = m_db->driver()->primaryIndex("weather");
 		QCOMPARE(idx.count(), 1);
 		QVERIFY(idx.contains("id"));
 	}

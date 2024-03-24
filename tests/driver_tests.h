@@ -244,23 +244,29 @@ private slots:
 		QVERIFY(rec.contains("date"));
 	}
 
-	void primaryIndexTest() {
+	void dateTimeTest() {
 		bool ok = m_db->open();
 		QVERIFY(ok);
 		QSqlQuery query(*m_db);
-		query.exec(R"(CREATE TABLE weather (
-			id			   INT PRIMARY KEY,
-            city           VARCHAR,
-            temp_lo        INTEGER, 
-            temp_hi        INTEGER,
-            prcp           REAL,
-            date           DATE
-        ); )");
+		query.exec(R"(SELECT DATETIME '1992-09-20 11:30:00.123456789')");
 		checkError(query);
-		query.exec("CREATE UNIQUE INDEX city_idx ON weather(city)");
+		QVERIFY(query.next());
+		auto test = query.value(0).toDateTime();
+		QCOMPARE(test.date(), QDate(1992, 9, 20));
+		QCOMPARE(test.time(), QTime(11, 30, 00, 123));
+		QVERIFY(query.next() == false);
+	}
+
+	void timestampTest() {
+		bool ok = m_db->open();
+		QVERIFY(ok);
+		QSqlQuery query(*m_db);
+		query.exec(R"(SELECT TIMESTAMP '1992-09-20 11:30:00.123456789')");
 		checkError(query);
-		auto idx = m_db->driver()->primaryIndex("weather");
-		QCOMPARE(idx.count(), 1);
-		QVERIFY(idx.contains("id"));
+		QVERIFY(query.next());
+		auto test = query.value(0).toDateTime();
+		QCOMPARE(test.date(), QDate(1992, 9, 20));
+		QCOMPARE(test.time(), QTime(11, 30, 00, 123));
+		QVERIFY(query.next() == false);
 	}
 };

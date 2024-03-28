@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.config.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     
@@ -55,10 +55,11 @@ jobs:
     
     - name: Upload artifacts
       if: matrix.config.os == 'windows-latest'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-QtDuckDBDriver-DLL
         path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
+        compression-level: 0
 
 
 

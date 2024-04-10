@@ -278,7 +278,7 @@ private slots:
 	}
 
 	void lastInsertIdTest() {
-		// so far, not supported
+		// so far, not supported, see lastInsertIdTestWithReturning for a substitution
 		QVERIFY(m_db->open());
 		QVERIFY(!m_db->driver()->hasFeature(QSqlDriver::DriverFeature::LastInsertId));
 		QSqlQuery query(*m_db);
@@ -294,5 +294,24 @@ private slots:
 		query.exec(R"(INSERT INTO Persons (LastName, FirstName, Age) VALUES ('Doe', 'John', 99);)");
 		checkError(query);
 		QVERIFY(!query.lastInsertId().isValid()); // should be 1 if feature is supported
+	}
+
+	void lastInsertIdTestWithReturning() {
+		QVERIFY(m_db->open());
+		QSqlQuery query(*m_db);
+		query.exec(R"(CREATE SEQUENCE seq_personid START 1;)");
+		checkError(query);
+		query.exec(R"(CREATE TABLE Persons (
+					Personid integer primary key default nextval('seq_personid'),
+					LastName varchar(255) not null,
+					FirstName varchar(255),
+					Age integer
+					);)");
+		checkError(query);
+		query.exec(
+		    R"(INSERT INTO Persons (LastName, FirstName, Age) VALUES ('Doe', 'John', 99) RETURNING (Personid);)");
+		checkError(query);
+		QVERIFY(query.next());
+		QCOMPARE_EQ(query.value(0).toInt(), 1);
 	}
 };

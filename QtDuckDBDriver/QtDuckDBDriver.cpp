@@ -549,7 +549,6 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case BLOB:
 	case Transactions:
 	case Unicode:
-	case LastInsertId:
 	case PreparedQueries:
 	case PositionalPlaceholders:
 	case SimpleLocking:

@@ -51,6 +51,13 @@ private slots:
 
 		query.exec(R"( INSERT INTO weather VALUES ('San Francisco', 46, 50, 0.25, '1994-11-27'); )");
 		checkError(query);
+		while (query.next()) {
+			QCOMPARE(query.size(), 4);
+			QCOMPARE(query.value(0).toInt(), 46);
+			QCOMPARE(query.value(1).toInt(), 50);
+			QCOMPARE(query.value(2).toString(), "0.25");
+			QCOMPARE(query.value(3).toDate(), QDate(1994, 11, 27));
+		}
 
 		query.exec(R"(SELECT COUNT(*) FROM weather)");
 		checkError(query);
@@ -268,5 +275,11 @@ private slots:
 		QCOMPARE(test.date(), QDate(1992, 9, 20));
 		QCOMPARE(test.time(), QTime(11, 30, 00, 123));
 		QVERIFY(query.next() == false);
+	}
+
+	void lastInsertIdTest() {
+		QVERIFY(m_db->open());
+		QVERIFY(!m_db->driver()->hasFeature(QSqlDriver::DriverFeature::LastInsertId));
+		// if you ad the feature, add a test
 	}
 };

@@ -514,11 +514,6 @@ int QDuckDBResult::numRowsAffected() {
 
 QVariant QDuckDBResult::lastInsertId() const {
 	Q_D(const QDuckDBResult);
-	if (isActive()) {
-		qint64 id = sqlite3_last_insert_rowid(d->drv_d_func()->access);
-		if (id)
-			return id;
-	}
 	return QVariant();
 }
 
@@ -554,12 +549,12 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case BLOB:
 	case Transactions:
 	case Unicode:
-	case LastInsertId:
 	case PreparedQueries:
 	case PositionalPlaceholders:
 	case SimpleLocking:
 	case FinishQuery:
 		return true;
+	case LastInsertId:
 	case NamedPlaceholders:
 	case LowPrecisionNumbers: // unsure
 	case EventNotifications:

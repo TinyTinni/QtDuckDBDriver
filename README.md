@@ -17,7 +17,7 @@ You can also use it to load csv or parquet (if duckdb was compiled with parquet 
 ```cpp
 QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
 db.open(); // no database name given -> creates a in-memory database
-db.exec("CREATE TABLE new_tbl AS SELECT * FROM read_csv_auto('my_csv.csv');";
+db.exec("CREATE TABLE new_tbl AS SELECT * FROM read_csv_auto('my_csv.csv');)";
 ```
 
 ## Example

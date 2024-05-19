@@ -9,8 +9,8 @@ class Connection;
 } // namespace duckdb
 
 struct DuckDBConnectionHandle {
-	duckdb::DuckDB *db;
-	duckdb::Connection *connection;
+	duckdb::DuckDB *db = nullptr;
+	duckdb::Connection *connection = nullptr;
 };
 
 #ifdef QT_PLUGIN

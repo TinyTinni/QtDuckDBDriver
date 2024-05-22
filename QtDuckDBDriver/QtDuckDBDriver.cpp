@@ -408,8 +408,8 @@ bool QDuckDBResult::prepare(const QString &query) {
 
 	setSelect(false);
 
-	auto query_str = query.toStdString();
-	auto db = d->drv_d_func()->access;
+	const auto &query_str = query.toStdString();
+	auto &&db = d->drv_d_func()->access;
 
 	auto build_error = [this, d](duckdb::ErrorData &errData) {
 		setLastError(qMakeError(errData, QCoreApplication::translate("QDuckDBResult", "Unable to execute statement"),

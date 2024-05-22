@@ -22,10 +22,7 @@ struct DbHandle {
 };
 
 struct DuckDBStmt {
-	//! The DB object that this statement belongs to
-	DbHandle *db;
-	//! The query string
-	duckdb::string query_string;
+	duckdb::shared_ptr<duckdb::ClientContext> context;
 	//! The prepared statement object, if successfully prepared
 	duckdb::unique_ptr<duckdb::PreparedStatement> prepared;
 	//! The result object, if successfully executed
@@ -36,13 +33,8 @@ struct DuckDBStmt {
 	int64_t current_row;
 	//! Bound values, used for binding to the prepared statement
 	duckdb::vector<duckdb::Value> bound_values;
-	//! Names of the prepared parameters
-	duckdb::vector<duckdb::string> bound_names;
 	int64_t last_changes = 0;
 };
-
-Q_DECLARE_OPAQUE_POINTER(DuckDBStmt *)
-Q_DECLARE_METATYPE(DuckDBStmt *)
 
 using namespace Qt::StringLiterals;
 
@@ -126,7 +118,7 @@ public:
 	void initColumns(bool emptyResultset);
 	void finalize();
 
-	DuckDBStmt *stmt = nullptr;
+	std::unique_ptr<DuckDBStmt> stmt = nullptr;
 	QSqlRecord rInf;
 	QList<QVariant> firstRow;
 	bool skippedStatus = false; // the status of the fetchNext() that's skipped
@@ -148,8 +140,7 @@ void QDuckDBResultPrivate::finalize() {
 	if (!stmt)
 		return;
 
-	delete stmt;
-	stmt = 0;
+	stmt.reset();
 }
 
 QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
@@ -231,7 +222,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 			firstRow.resize(stmt->prepared->ColumnCount());
 	}
 
-	if (!stmt || !stmt->db) {
+	if (!stmt || !stmt->context) {
 		q->setLastError(QSqlError(QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
 		                          QCoreApplication::translate("QDuckDbResult", "No query"),
 		                          QSqlError::ConnectionError));
@@ -314,7 +305,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 			duckdb::Value val = stmt->current_chunk->data[i].GetValue(stmt->current_row);
 			switch (val.type().id()) {
 			case duckdb::LogicalTypeId::BLOB: {
-				val = val.CastAs(*stmt->db->con->context, duckdb::LogicalType::BLOB);
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::BLOB);
 				const auto &str = duckdb::StringValue::Get(val);
 				values[i + idx] = QByteArray(str.data(), str.size());
 				break;
@@ -324,7 +315,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 			case duckdb::LogicalTypeId::SMALLINT:
 			case duckdb::LogicalTypeId::INTEGER:
 			case duckdb::LogicalTypeId::BIGINT:
-				val = val.CastAs(*stmt->db->con->context, duckdb::LogicalType::INTEGER);
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
 				values[i + idx] = duckdb::IntegerValue::Get(val);
 				break;
 			case duckdb::LogicalTypeId::FLOAT:
@@ -332,23 +323,23 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 			case duckdb::LogicalTypeId::DECIMAL:
 				switch (q->numericalPrecisionPolicy()) {
 				case QSql::LowPrecisionInt32:
-					val = val.CastAs(*stmt->db->con->context, duckdb::LogicalType::INTEGER);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
 					values[i + idx] = duckdb::IntegerValue::Get(val);
 					break;
 				case QSql::LowPrecisionInt64:
-					val = val.CastAs(*stmt->db->con->context, duckdb::LogicalType::BIGINT);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::BIGINT);
 					values[i + idx] = QVariant((qint64)duckdb::BigIntValue::Get(val));
 					break;
 				case QSql::LowPrecisionDouble:
 				case QSql::HighPrecision:
 				default:
-					val = val.CastAs(*stmt->db->con->context, duckdb::LogicalType::DOUBLE);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::DOUBLE);
 					values[i + idx] = duckdb::DoubleValue::Get(val);
 					break;
 				};
 				break;
 			default:
-				if (!val.IsNull() && val.TryCastAs(*stmt->db->con->context, duckdb::LogicalType::VARCHAR)) {
+				if (!val.IsNull() && val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
 					values[i + idx] = QString::fromStdString(duckdb::StringValue::Get(val));
 				} else {
 					values[i + idx] = QVariant(QMetaType::fromType<QString>());
@@ -474,17 +465,12 @@ bool QDuckDBResult::prepare(const QString &query) {
 		}
 
 		// create the statement entry
-		duckdb::unique_ptr<DuckDBStmt> stmt = duckdb::make_uniq<DuckDBStmt>();
-		stmt->db = db;
-		stmt->query_string = query_str;
-		stmt->prepared = std::move(prepared);
-		stmt->current_row = -1;
-		for (idx_t i = 0; i < stmt->prepared->n_param; i++) {
-			stmt->bound_names.push_back("$" + duckdb::to_string(i + 1));
-			stmt->bound_values.push_back(duckdb::Value());
-		}
+		d->stmt = duckdb::make_uniq<DuckDBStmt>();
+		d->stmt->context = db->con->context;
+		d->stmt->prepared = std::move(prepared);
+		d->stmt->current_row = -1;
+		d->stmt->bound_values.resize(d->stmt->prepared->n_param);
 
-		d->stmt = stmt.release();
 		return true;
 	} catch (std::exception &ex) {
 		auto errData = duckdb::ErrorData(ex);
@@ -641,7 +627,7 @@ void QDuckDBResult::detachFromResultSet() {
 
 QVariant QDuckDBResult::handle() const {
 	Q_D(const QDuckDBResult);
-	return QVariant::fromValue(d->stmt);
+	return QVariant::fromValue(d->stmt.get());
 }
 
 /////////////////////////////////////////////////////////

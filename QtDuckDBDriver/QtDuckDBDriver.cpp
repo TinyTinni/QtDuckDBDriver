@@ -1,39 +1,40 @@
-
-// #ifdef USE_DUCKDB_SHELL_WRAPPER
-#include <duckdb_shell_wrapper.h>
-// #endif
 #include "QtDuckDBDriver.h"
 
-#include <QScopedValueRollback>
-#include <functional>
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QList>
+#include <QSqlError>
+#include <QSqlField>
+#include <QSqlIndex>
+#include <QSqlQuery>
+#include <QVariant>
+#include <duckdb.hpp>
+#include <duckdb/parser/parser.hpp>
 #include <private/qsqlcachedresult_p.h>
 #include <private/qsqldriver_p.h>
-#include <qcoreapplication.h>
-#include <qdatetime.h>
-#include <qdebug.h>
-#include <qlist.h>
-#include <qsqlerror.h>
-#include <qsqlfield.h>
-#include <qsqlindex.h>
-#include <qsqlquery.h>
-#include <qstringlist.h>
-#include <qvariant.h>
-#include <sqlite3.h>
-#include <udf_struct_sqlite3.h>
-
-#if defined Q_OS_WIN
-#include <qt_windows.h>
-#else
-#include <unistd.h>
-#endif
 
 Q_DECLARE_OPAQUE_POINTER(DuckDBConnectionHandle *)
 Q_DECLARE_METATYPE(DuckDBConnectionHandle *)
 
-using DuckDBStmt = sqlite3_stmt;
+struct DbHandle {
+	duckdb::unique_ptr<duckdb::DuckDB> db;
+	duckdb::unique_ptr<duckdb::Connection> con;
+};
 
-Q_DECLARE_OPAQUE_POINTER(DuckDBStmt *)
-Q_DECLARE_METATYPE(DuckDBStmt *)
+struct DuckDBStmt {
+	duckdb::shared_ptr<duckdb::ClientContext> context;
+	//! The prepared statement object, if successfully prepared
+	duckdb::unique_ptr<duckdb::PreparedStatement> prepared;
+	//! The result object, if successfully executed
+	duckdb::unique_ptr<duckdb::QueryResult> result;
+	//! The current chunk that we are iterating over
+	duckdb::unique_ptr<duckdb::DataChunk> current_chunk;
+	//! The current row into the current chunk that we are iterating over
+	int64_t current_row;
+	//! Bound values, used for binding to the prepared statement
+	duckdb::vector<duckdb::Value> bound_values;
+	int64_t last_changes = 0;
+};
 
 using namespace Qt::StringLiterals;
 
@@ -66,8 +67,9 @@ static int qGetColumnType(const QString &tpName) {
 	return QMetaType::QString;
 }
 
-static QSqlError qMakeError(sqlite3 *access, const QString &descr, QSqlError::ErrorType type, int errorCode) {
-	return QSqlError(descr, QString::fromUtf8(sqlite3_errmsg(access)), type, QString::number(errorCode));
+static QSqlError qMakeError(duckdb::ErrorData &errData, const QString &descr, QSqlError::ErrorType type) {
+	return QSqlError(descr, QString::fromStdString(errData.Message()), type,
+	                 QString::fromStdString(duckdb::Exception::ExceptionTypeToString(errData.Type())));
 }
 
 class QDuckDBResultPrivate;
@@ -100,7 +102,7 @@ class QDuckDBDriverPrivate : public QSqlDriverPrivate {
 public:
 	inline QDuckDBDriverPrivate() : QSqlDriverPrivate(QSqlDriver::SQLite) {
 	}
-	sqlite3 *access = nullptr;
+	duckdb::unique_ptr<DbHandle> access = nullptr;
 	QList<QDuckDBResult *> results;
 };
 
@@ -116,7 +118,7 @@ public:
 	void initColumns(bool emptyResultset);
 	void finalize();
 
-	sqlite3_stmt *stmt = nullptr;
+	std::unique_ptr<DuckDBStmt> stmt = nullptr;
 	QSqlRecord rInf;
 	QList<QVariant> firstRow;
 	bool skippedStatus = false; // the status of the fetchNext() that's skipped
@@ -138,57 +140,68 @@ void QDuckDBResultPrivate::finalize() {
 	if (!stmt)
 		return;
 
-	sqlite3_finalize(stmt);
-	stmt = 0;
+	stmt.reset();
+}
+
+QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
+	switch (type.id()) {
+	case duckdb::LogicalTypeId::BOOLEAN:
+		return QMetaType::Bool;
+	case duckdb::LogicalTypeId::TINYINT:
+		return QMetaType::Short;
+	case duckdb::LogicalTypeId::SMALLINT:
+		return QMetaType::Short;
+	case duckdb::LogicalTypeId::INTEGER:
+		return QMetaType::Int;
+	case duckdb::LogicalTypeId::BIGINT:
+		return QMetaType::Long;
+	case duckdb::LogicalTypeId::FLOAT:
+		return QMetaType::Float;
+	case duckdb::LogicalTypeId::DOUBLE:
+		return QMetaType::Double;
+	case duckdb::LogicalTypeId::BLOB:
+		return QMetaType::QByteArray;
+	case duckdb::LogicalTypeId::DECIMAL:
+	case duckdb::LogicalTypeId::DATE:
+	case duckdb::LogicalTypeId::TIME:
+	case duckdb::LogicalTypeId::TIMESTAMP:
+	case duckdb::LogicalTypeId::TIMESTAMP_NS:
+	case duckdb::LogicalTypeId::TIMESTAMP_MS:
+	case duckdb::LogicalTypeId::TIMESTAMP_SEC:
+	case duckdb::LogicalTypeId::VARCHAR:
+	case duckdb::LogicalTypeId::LIST:
+	case duckdb::LogicalTypeId::MAP:
+	case duckdb::LogicalTypeId::STRUCT:
+	default:
+		return QMetaType::QString;
+	}
 }
 
 void QDuckDBResultPrivate::initColumns(bool emptyResultset) {
 	Q_Q(QDuckDBResult);
-	int nCols = sqlite3_column_count(stmt);
+	if (!stmt || !stmt->prepared)
+		return;
+
+	duckdb::idx_t nCols = stmt->prepared->ColumnCount();
 	if (nCols <= 0)
 		return;
 
 	q->init(nCols);
 
-	for (int i = 0; i < nCols; ++i) {
-		QString colName = QString::fromUtf8(sqlite3_column_name(stmt, i)).remove(u'"');
-		const QString tableName = QString::fromUtf8(sqlite3_column_table_name(stmt, i)).remove(u'"');
-		// must use typeName for resolving the type to match QDuckDBDriver::record
-		QString typeName = QString::fromUtf8(sqlite3_column_decltype(stmt, i));
-		// sqlite3_column_type is documented to have undefined behavior if the result set is empty
-		int stp = emptyResultset ? -1 : sqlite3_column_type(stmt, i);
+	const auto &columnNamesVec = stmt->prepared->GetNames();
+	const auto &columnTypesVec = stmt->prepared->GetTypes();
 
-		int fieldType;
+	for (duckdb::idx_t i = 0; i < nCols; ++i) {
+		QString colName = QString::fromUtf8(columnNamesVec[i]).remove(u'"');
+		auto fieldType = duckdbTypeToQtType(columnTypesVec[i]);
 
-		if (!typeName.isEmpty()) {
-			fieldType = qGetColumnType(typeName);
-		} else {
-			// Get the proper type for the field based on stp value
-			switch (stp) {
-			case SQLITE_INTEGER:
-				fieldType = QMetaType::Int;
-				break;
-			case SQLITE_FLOAT:
-				fieldType = QMetaType::Double;
-				break;
-			case SQLITE_BLOB:
-				fieldType = QMetaType::QByteArray;
-				break;
-			case SQLITE_TEXT:
-				fieldType = QMetaType::QString;
-				break;
-			case SQLITE_NULL:
-			default:
-				fieldType = QMetaType::UnknownType;
-				break;
-			}
-		}
-
-		QSqlField fld(colName, QMetaType(fieldType), tableName);
-		fld.setSqlType(stp);
+		QSqlField fld(colName, QMetaType(fieldType));
+		fld.setSqlType(fieldType);
 		rInf.append(fld);
 	}
 }
+
+///////////////////////
 
 bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int idx, bool initialFetch) {
 	Q_Q(QDuckDBResult);
@@ -205,88 +218,167 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 
 	if (initialFetch) {
 		firstRow.clear();
-		firstRow.resize(sqlite3_column_count(stmt));
+		if (stmt && stmt->prepared)
+			firstRow.resize(stmt->prepared->ColumnCount());
 	}
 
-	if (!stmt) {
-		q->setLastError(QSqlError(QCoreApplication::translate("QSQLiteResult", "Unable to fetch row"),
-		                          QCoreApplication::translate("QSQLiteResult", "No query"),
+	if (!stmt || !stmt->context) {
+		q->setLastError(QSqlError(QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
+		                          QCoreApplication::translate("QDuckDbResult", "No query"),
 		                          QSqlError::ConnectionError));
 		q->setAt(QSql::AfterLastRow);
 		return false;
 	}
-	int res = sqlite3_step(stmt);
-	switch (res) {
-	case SQLITE_ROW:
-		// check to see if should fill out columns
+	if (!stmt->prepared) {
+		q->setLastError(
+		    QSqlError(QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
+		              QCoreApplication::translate("QDuckDbResult",
+		                                          "Attempting fetchNext() on a non-successfully prepared statement."),
+		              QSqlError::ConnectionError));
+		q->setAt(QSql::AfterLastRow);
+		return false;
+	}
+
+	auto buildError = [this, q](duckdb::ErrorData &errData) {
+		stmt->result = nullptr;
+		stmt->current_chunk = nullptr;
+		q->setLastError(qMakeError(errData, "Unable to fetch row.", QSqlError::ConnectionError));
+		q->setAt(QSql::AfterLastRow);
+	};
+
+	auto fetchNext = [&]() {
+		duckdb::ErrorData errData;
+		if (!stmt->result->TryFetch(stmt->current_chunk, errData)) {
+			buildError(errData);
+			return false;
+		}
+		return true;
+	};
+
+	auto isDone = [&]() {
+		if (!stmt->current_chunk || stmt->current_chunk->size() == 0) {
+			stmt->result = nullptr;
+			stmt->current_chunk = nullptr;
+			if (rInf.isEmpty())
+				initColumns(true);
+			q->setAt(QSql::AfterLastRow);
+			return true;
+		}
+		return false;
+	};
+
+	auto executeQuery = [&]() {
+		stmt->result = stmt->prepared->Execute(stmt->bound_values, true);
+		if (stmt->result->HasError()) {
+			// error in execute: clear prepared statement
+			buildError(stmt->result->GetErrorObject());
+			return false;
+		}
+		return true;
+	};
+
+	auto collectStats = [&]() {
+		auto properties = stmt->prepared->GetStatementProperties();
+		if (properties.return_type == duckdb::StatementReturnType::CHANGED_ROWS && stmt->current_chunk &&
+		    stmt->current_chunk->size() > 0) {
+			// update total changes
+			auto row_changes = stmt->current_chunk->GetValue(0, 0);
+			if (!row_changes.IsNull() && row_changes.DefaultTryCastAs(duckdb::LogicalType::BIGINT)) {
+				stmt->last_changes = row_changes.GetValue<int64_t>();
+			}
+		}
+		if (properties.return_type != duckdb::StatementReturnType::QUERY_RESULT) {
+			stmt->current_chunk.reset();
+			stmt->result.reset();
+		}
+	};
+
+	auto fillRow = [&]() {
+		//// check to see if should fill out columns
 		if (rInf.isEmpty())
 			// must be first call.
 			initColumns(false);
 		if (idx < 0 && !initialFetch)
 			return true;
 		for (int i = 0; i < rInf.count(); ++i) {
-			switch (sqlite3_column_type(stmt, i)) {
-			case SQLITE_BLOB:
-				values[i + idx] =
-				    QByteArray(static_cast<const char *>(sqlite3_column_blob(stmt, i)), sqlite3_column_bytes(stmt, i));
+
+			duckdb::Value val = stmt->current_chunk->data[i].GetValue(stmt->current_row);
+			switch (val.type().id()) {
+			case duckdb::LogicalTypeId::BLOB: {
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::BLOB);
+				const auto &str = duckdb::StringValue::Get(val);
+				values[i + idx] = QByteArray(str.data(), str.size());
 				break;
-			case SQLITE_INTEGER:
-				values[i + idx] = sqlite3_column_int64(stmt, i);
+			}
+			case duckdb::LogicalTypeId::BOOLEAN:
+			case duckdb::LogicalTypeId::TINYINT:
+			case duckdb::LogicalTypeId::SMALLINT:
+			case duckdb::LogicalTypeId::INTEGER:
+			case duckdb::LogicalTypeId::BIGINT:
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
+				values[i + idx] = duckdb::IntegerValue::Get(val);
 				break;
-			case SQLITE_FLOAT:
+			case duckdb::LogicalTypeId::FLOAT:
+			case duckdb::LogicalTypeId::DOUBLE:
+			case duckdb::LogicalTypeId::DECIMAL:
 				switch (q->numericalPrecisionPolicy()) {
 				case QSql::LowPrecisionInt32:
-					values[i + idx] = sqlite3_column_int(stmt, i);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
+					values[i + idx] = duckdb::IntegerValue::Get(val);
 					break;
 				case QSql::LowPrecisionInt64:
-					values[i + idx] = sqlite3_column_int64(stmt, i);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::BIGINT);
+					values[i + idx] = QVariant((qint64)duckdb::BigIntValue::Get(val));
 					break;
 				case QSql::LowPrecisionDouble:
 				case QSql::HighPrecision:
 				default:
-					values[i + idx] = sqlite3_column_double(stmt, i);
+					val = val.CastAs(*stmt->context, duckdb::LogicalType::DOUBLE);
+					values[i + idx] = duckdb::DoubleValue::Get(val);
 					break;
 				};
 				break;
-			case SQLITE_NULL:
-				values[i + idx] = QVariant(QMetaType::fromType<QString>());
-				break;
 			default:
-				values[i + idx] = QString::fromUtf8((const char *)sqlite3_column_text(stmt, i),
-				                                    (int)(sqlite3_column_bytes(stmt, i) / sizeof(char)));
+				if (!val.IsNull() && val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
+					values[i + idx] = QString::fromStdString(duckdb::StringValue::Get(val));
+				} else {
+					values[i + idx] = QVariant(QMetaType::fromType<QString>());
+				}
 				break;
 			}
 		}
 		return true;
-	case SQLITE_DONE:
-		if (rInf.isEmpty())
-			// must be first call.
-			initColumns(true);
-		q->setAt(QSql::AfterLastRow);
-		sqlite3_reset(stmt);
-		return false;
-	case SQLITE_CONSTRAINT:
-	case SQLITE_ERROR:
-		// SQLITE_ERROR is a generic error code and we must call sqlite3_reset()
-		// to get the specific error message.
-		res = sqlite3_reset(stmt);
-		q->setLastError(qMakeError(drv_d_func()->access,
-		                           QCoreApplication::translate("QSQLiteResult", "Unable to fetch row"),
-		                           QSqlError::ConnectionError, res));
-		q->setAt(QSql::AfterLastRow);
-		return false;
-	case SQLITE_MISUSE:
-	case SQLITE_BUSY:
-	default:
-		// something wrong, don't get col info, but still return false
-		q->setLastError(qMakeError(drv_d_func()->access,
-		                           QCoreApplication::translate("QSQLiteResult", "Unable to fetch row"),
-		                           QSqlError::ConnectionError, res));
-		sqlite3_reset(stmt);
-		q->setAt(QSql::AfterLastRow);
+	};
+
+	///////////////
+	if (!stmt->result) {
+		// no result yet! call Execute()
+		if (!executeQuery()) {
+			return false;
+		}
+		// fetch a chunk
+		if (!fetchNext()) {
+			return false;
+		}
+
+		stmt->current_row = -1;
+		collectStats();
+	}
+	if (isDone()) {
 		return false;
 	}
-	return false;
+	stmt->current_row++;
+	if (stmt->current_row >= (int32_t)stmt->current_chunk->size()) {
+		// have to fetch again!
+		stmt->current_row = 0;
+		if (!fetchNext()) {
+			return false;
+		}
+		if (isDone()) {
+			return false;
+		}
+	}
+	return fillRow();
 }
 
 QDuckDBResult::QDuckDBResult(const QDuckDBDriver *db) : QSqlCachedResult(*new QDuckDBResultPrivate(this, db)) {
@@ -316,27 +408,77 @@ bool QDuckDBResult::prepare(const QString &query) {
 
 	setSelect(false);
 
-	const char *pzTail = nullptr;
-	QByteArray query_string = query.toUtf8();
-	int res = sqlite3_prepare_v2(d->drv_d_func()->access, query_string.constData(), query_string.size(), &d->stmt,
-	                             (const char **)&pzTail);
+	const auto &query_str = query.toStdString();
+	auto &&db = d->drv_d_func()->access;
 
-	if (res != SQLITE_OK) {
-		setLastError(qMakeError(d->drv_d_func()->access,
-		                        QCoreApplication::translate("QSQLiteResult", "Unable to execute statement"),
-		                        QSqlError::StatementError, res));
+	auto build_error = [this, d](duckdb::ErrorData &errData) {
+		setLastError(qMakeError(errData, QCoreApplication::translate("QDuckDBResult", "Unable to execute statement"),
+		                        QSqlError::StatementError));
 		d->finalize();
-		return false;
-	} else if (pzTail && !QString(pzTail).trimmed().isEmpty()) {
-		QString debug = QString(pzTail).trimmed();
-		setLastError(
-		    qMakeError(d->drv_d_func()->access,
-		               QCoreApplication::translate("QSQLiteResult", "Unable to execute multiple statements at a time"),
-		               QSqlError::StatementError, SQLITE_MISUSE));
-		d->finalize();
+	};
+
+	if (!db) {
 		return false;
 	}
-	return true;
+	try {
+		duckdb::Parser parser(db->con->context->GetParserOptions());
+		parser.ParseQuery(query_str);
+		if (parser.statements.size() == 0) {
+			return true;
+		}
+		// extract the remainder
+		idx_t next_location = parser.statements[0]->stmt_location + parser.statements[0]->stmt_length;
+		// extract the remainder of the query
+		if (next_location < query_str.size() && !QString(query_str.data() + next_location + 1).trimmed().isEmpty()) {
+			setLastError(QSqlError(
+			    QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
+			    QCoreApplication::translate("QDuckDbResult", "Unable to execute multiple statements at a time")));
+			d->finalize();
+			return false;
+		}
+
+		// extract the first statement
+		duckdb::vector<duckdb::unique_ptr<duckdb::SQLStatement>> statements;
+		statements.push_back(std::move(parser.statements[0]));
+
+		db->con->context->HandlePragmaStatements(statements);
+		if (statements.empty()) {
+			return true;
+		}
+
+		// if there are multiple statements here, we are dealing with an import database statement
+		// we directly execute all statements besides the final one
+		for (idx_t i = 0; i + 1 < statements.size(); i++) {
+			auto res = db->con->Query(std::move(statements[i]));
+			if (res->HasError()) {
+				build_error(res->GetErrorObject());
+				return false;
+			}
+		}
+
+		// now prepare the query
+		auto prepared = db->con->Prepare(std::move(statements.back()));
+		if (prepared->HasError()) {
+			// failed to prepare: set the error message
+			build_error(prepared->error);
+			return false;
+		}
+
+		// create the statement entry
+		d->stmt = duckdb::make_uniq<DuckDBStmt>();
+		d->stmt->context = db->con->context;
+		d->stmt->prepared = std::move(prepared);
+		d->stmt->current_row = -1;
+		d->stmt->bound_values.resize(d->stmt->prepared->n_param);
+
+		return true;
+	} catch (std::exception &ex) {
+		auto errData = duckdb::ErrorData(ex);
+		db->con->context->ProcessError(errData, query_str);
+		build_error(errData);
+		return false;
+	}
+	return false;
 }
 
 bool QDuckDBResult::execBatch(bool arrayBind) {
@@ -365,128 +507,73 @@ bool QDuckDBResult::exec() {
 	Q_D(QDuckDBResult);
 	QList<QVariant> values = boundValues();
 
+	if (!d->stmt)
+		return false;
+
 	d->skippedStatus = false;
 	d->skipRow = false;
 	d->rInf.clear();
 	clearValues();
 	setLastError(QSqlError());
 
-	int res = sqlite3_reset(d->stmt);
-	if (res != SQLITE_OK) {
-		setLastError(qMakeError(d->drv_d_func()->access,
-		                        QCoreApplication::translate("QSQLiteResult", "Unable to reset statement"),
-		                        QSqlError::StatementError, res));
-		d->finalize();
-		return false;
-	}
+	d->stmt->result.reset();
+	d->stmt->current_chunk.reset();
 
-	int paramCount = sqlite3_bind_parameter_count(d->stmt);
-	bool paramCountIsValid = paramCount == values.size();
-
-#if (SQLITE_VERSION_NUMBER >= 3003011)
-	// In the case of the reuse of a named placeholder
-	// We need to check explicitly that paramCount is greater than or equal to 1, as sqlite
-	// can end up in a case where for virtual tables it returns 0 even though it
-	// has parameters
-	if (paramCount >= 1 && paramCount < values.size()) {
-		const auto countIndexes = [](int counter, const QList<int> &indexList) {
-			return counter + indexList.size();
-		};
-
-		const int bindParamCount = std::accumulate(d->indexes.cbegin(), d->indexes.cend(), 0, countIndexes);
-
-		paramCountIsValid = bindParamCount == values.size();
-		// When using named placeholders, it will reuse the index for duplicated
-		// placeholders. So we need to ensure the QList has only one instance of
-		// each value as SQLite will do the rest for us.
-		QList<QVariant> prunedValues;
-		QList<int> handledIndexes;
-		for (int i = 0, currentIndex = 0; i < values.size(); ++i) {
-			if (handledIndexes.contains(i))
-				continue;
-			const char *parameterName = sqlite3_bind_parameter_name(d->stmt, currentIndex + 1);
-			if (!parameterName) {
-				paramCountIsValid = false;
-				continue;
-			}
-			const auto placeHolder = QString::fromUtf8(parameterName);
-			const auto &indexes = d->indexes.value(placeHolder);
-			handledIndexes << indexes;
-			prunedValues << values.at(indexes.first());
-			++currentIndex;
-		}
-		values = prunedValues;
-	}
-#endif
-
-	if (paramCountIsValid) {
-		for (int i = 0; i < paramCount; ++i) {
-			res = SQLITE_OK;
-			const QVariant &value = values.at(i);
-
-			if (QSqlResultPrivate::isVariantNull(value)) {
-				res = sqlite3_bind_null(d->stmt, i + 1);
-			} else {
-				switch (value.userType()) {
-				case QMetaType::QByteArray: {
-					const QByteArray *ba = static_cast<const QByteArray *>(value.constData());
-					res = sqlite3_bind_blob(d->stmt, i + 1, ba->constData(), ba->size(), SQLITE_STATIC);
-					break;
-				}
-				case QMetaType::Int:
-				case QMetaType::Bool:
-					res = sqlite3_bind_int(d->stmt, i + 1, value.toInt());
-					break;
-				case QMetaType::Double:
-					res = sqlite3_bind_double(d->stmt, i + 1, value.toDouble());
-					break;
-				case QMetaType::UInt:
-				case QMetaType::LongLong:
-					res = sqlite3_bind_int64(d->stmt, i + 1, value.toLongLong());
-					break;
-				case QMetaType::QDateTime: {
-					const QDateTime dateTime = value.toDateTime();
-					const QString str = dateTime.toString(Qt::ISODateWithMs);
-					res = sqlite3_bind_text(d->stmt, i + 1, str.toUtf8(), int(str.size() * sizeof(char)),
-					                        SQLITE_TRANSIENT);
-					break;
-				}
-				case QMetaType::QTime: {
-					const QTime time = value.toTime();
-					const QString str = time.toString(u"hh:mm:ss.zzz");
-					res = sqlite3_bind_text(d->stmt, i + 1, str.toUtf8(), int(str.size() * sizeof(char)),
-					                        SQLITE_TRANSIENT);
-					break;
-				}
-				case QMetaType::QString: {
-					// lifetime of string == lifetime of its qvariant
-					const QString *str = static_cast<const QString *>(value.constData());
-					res = sqlite3_bind_text(d->stmt, i + 1, str->toUtf8(), int(str->size()) * sizeof(char),
-					                        SQLITE_STATIC);
-					break;
-				}
-				default: {
-					const QString str = value.toString();
-					// SQLITE_TRANSIENT makes sure that sqlite buffers the data
-					res = sqlite3_bind_text(d->stmt, i + 1, str.toUtf8(), int(str.size() * sizeof(char)),
-					                        SQLITE_TRANSIENT);
-					break;
-				}
-				}
-			}
-			if (res != SQLITE_OK) {
-				setLastError(qMakeError(d->drv_d_func()->access,
-				                        QCoreApplication::translate("QSQLiteResult", "Unable to bind parameters"),
-				                        QSqlError::StatementError, res));
-				d->finalize();
-				return false;
-			}
-		}
-	} else {
-		setLastError(QSqlError(QCoreApplication::translate("QSQLiteResult", "Parameter count mismatch"), QString(),
+	int paramCount = d->stmt->prepared->n_param;
+	if (paramCount != values.size()) {
+		setLastError(QSqlError(QCoreApplication::translate("QDuckDBResult", "Parameter count mismatch"), QString(),
 		                       QSqlError::StatementError));
 		return false;
 	}
+
+	for (int i = 0; i < paramCount; ++i) {
+		const QVariant &value = values.at(i);
+		if (QSqlResultPrivate::isVariantNull(value)) {
+			d->stmt->bound_values[i] = duckdb::Value();
+		} else {
+			switch (value.userType()) {
+			case QMetaType::QByteArray: {
+				const QByteArray *ba = static_cast<const QByteArray *>(value.constData());
+				d->stmt->bound_values[i] = duckdb::Value::BLOB(ba->toStdString());
+				break;
+			}
+			case QMetaType::Int:
+			case QMetaType::Bool:
+				d->stmt->bound_values[i] = duckdb::Value::INTEGER(value.toInt());
+				break;
+			case QMetaType::Double:
+				d->stmt->bound_values[i] = duckdb::Value::DOUBLE(value.toInt());
+				break;
+			case QMetaType::UInt:
+			case QMetaType::LongLong:
+				d->stmt->bound_values[i] = duckdb::Value::BIGINT(value.toInt());
+				break;
+			case QMetaType::QDateTime: {
+				const QDateTime dateTime = value.toDateTime();
+				const QString str = dateTime.toString(Qt::ISODateWithMs);
+				d->stmt->bound_values[i] = duckdb::Value(str.toStdString());
+				break;
+			}
+			case QMetaType::QTime: {
+				const QTime time = value.toTime();
+				const QString str = time.toString(u"hh:mm:ss.zzz");
+				d->stmt->bound_values[i] = duckdb::Value(str.toStdString());
+				break;
+			}
+			case QMetaType::QString: {
+				const QString *str = static_cast<const QString *>(value.constData());
+				d->stmt->bound_values[i] = duckdb::Value(str->toUtf8().toStdString());
+				break;
+			}
+			default: {
+				const QString str = value.toString();
+				d->stmt->bound_values[i] = duckdb::Value(str.toStdString());
+				break;
+			}
+			}
+		}
+	}
+
 	d->skippedStatus = d->fetchNext(d->firstRow, 0, true);
 	if (lastError().isValid()) {
 		setSelect(false);
@@ -504,12 +591,18 @@ bool QDuckDBResult::gotoNext(QSqlCachedResult::ValueCache &row, int idx) {
 }
 
 int QDuckDBResult::size() {
-	return -1;
+	Q_D(QDuckDBResult);
+	if (!d->stmt || !d->stmt->prepared)
+		return 0;
+	return d->stmt->prepared->ColumnCount();
 }
 
 int QDuckDBResult::numRowsAffected() {
 	Q_D(const QDuckDBResult);
-	return sqlite3_changes(d->drv_d_func()->access);
+	if (!d->stmt)
+		return -1;
+
+	return d->stmt->last_changes;
 }
 
 QVariant QDuckDBResult::lastInsertId() const {
@@ -526,13 +619,15 @@ QSqlRecord QDuckDBResult::record() const {
 
 void QDuckDBResult::detachFromResultSet() {
 	Q_D(QDuckDBResult);
-	if (d->stmt)
-		sqlite3_reset(d->stmt);
+	if (d->stmt) {
+		d->stmt->result.reset();
+		d->stmt->current_chunk.reset();
+	}
 }
 
 QVariant QDuckDBResult::handle() const {
 	Q_D(const QDuckDBResult);
-	return QVariant::fromValue(d->stmt);
+	return QVariant::fromValue(d->stmt.get());
 }
 
 /////////////////////////////////////////////////////////
@@ -553,12 +648,12 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case PositionalPlaceholders:
 	case SimpleLocking:
 	case FinishQuery:
+	case LowPrecisionNumbers: // unsure
+	case QuerySize:
 		return true;
 	case LastInsertId:
 	case NamedPlaceholders:
-	case LowPrecisionNumbers: // unsure
 	case EventNotifications:
-	case QuerySize:
 	case BatchOperations:
 	case MultipleResultSets:
 	case CancelQuery:
@@ -567,69 +662,52 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	return false;
 }
 
-/*
-   SQLite dbs have no user name, passwords, hosts or ports.
-   just file names.
-*/
 bool QDuckDBDriver::open(const QString &db, const QString &, const QString &, const QString &, int,
                          const QString &conOpts) {
 	Q_D(QDuckDBDriver);
 	if (isOpen())
 		close();
 
-	bool sharedCache = false;
 	bool openReadOnlyOption = false;
-	bool openUriOption = false;
-
-	const auto opts = QStringView {conOpts}.split(u';');
-	for (auto option : opts) {
-		option = option.trimmed();
-		if (option == "QSQLITE_OPEN_READONLY"_L1) {
+	for (const auto &option : conOpts.split(u';')) {
+		if (option.trimmed() == "READONLY"_L1) {
 			openReadOnlyOption = true;
-		} else if (option == "QSQLITE_OPEN_URI"_L1) {
-			openUriOption = true;
-		} else if (option == "QSQLITE_ENABLE_SHARED_CACHE"_L1) {
-			sharedCache = true;
 		}
 	}
 
-	int openMode = (openReadOnlyOption ? SQLITE_OPEN_READONLY : (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE));
-	openMode |= (sharedCache ? SQLITE_OPEN_SHAREDCACHE : SQLITE_OPEN_PRIVATECACHE);
-	if (openUriOption)
-		openMode |= SQLITE_OPEN_URI;
-
-	openMode |= SQLITE_OPEN_NOMUTEX;
-
-	const int res = sqlite3_open_v2(db.toUtf8().constData(), &d->access, openMode, nullptr);
-
-	if (res == SQLITE_OK) {
-		setOpen(true);
-		setOpenError(false);
-		return true;
-	} else {
-		setLastError(qMakeError(d->access, tr("Error opening database"), QSqlError::ConnectionError, res));
-		setOpenError(true);
-
+	try {
+		d->access = duckdb::make_uniq<DbHandle>();
+		duckdb::DBConfig config;
+		config.options.access_mode = duckdb::AccessMode::AUTOMATIC;
+		if (openReadOnlyOption) {
+			config.options.access_mode = duckdb::AccessMode::READ_ONLY;
+		}
+		d->access->db = duckdb::make_uniq<duckdb::DuckDB>(db.toStdString(), &config);
+		d->access->con = duckdb::make_uniq<duckdb::Connection>(*d->access->db);
+	} catch (std::exception &ex) {
 		if (d->access) {
-			sqlite3_close(d->access);
-			d->access = 0;
-		}
+			auto errData = duckdb::ErrorData(ex);
+			setLastError(qMakeError(errData, tr("Error opening database"), QSqlError::ConnectionError));
+			setOpenError(true);
 
-		return false;
+			d->access.reset();
+			return false;
+		}
 	}
+
+	setOpen(true);
+	setOpenError(false);
+	return true;
 }
 
 void QDuckDBDriver::close() {
 	Q_D(QDuckDBDriver);
 	if (isOpen()) {
-		for (QDuckDBResult *result : std::as_const(d->results))
+		for (QDuckDBResult *result : std::as_const(d->results)) {
 			result->d_func()->finalize();
+		}
 
-		const int res = sqlite3_close(d->access);
-
-		if (res != SQLITE_OK)
-			setLastError(qMakeError(d->access, tr("Error closing database"), QSqlError::ConnectionError, res));
-		d->access = 0;
+		d->access.reset();
 		setOpen(false);
 		setOpenError(false);
 	}
@@ -730,6 +808,7 @@ static QSqlIndex qGetTableInfo(QSqlQuery &q, const QString &tableName, bool only
 			}
 		}
 	}
+
 	q.exec("PRAGMA "_L1 + schema + "table_info ("_L1 + _q_escapeIdentifier(table, QSqlDriver::TableName) + u')');
 	QSqlIndex ind;
 	while (q.next()) {
@@ -784,6 +863,10 @@ QSqlRecord QDuckDBDriver::record(const QString &tbl) const {
 
 QVariant QDuckDBDriver::handle() const {
 	Q_D(const QDuckDBDriver);
+	if (!d->access) {
+		return QVariant::fromValue(DuckDBConnectionHandle {});
+	}
+
 	DuckDBConnectionHandle handle {d->access->db.get(), d->access->con.get()};
 	return QVariant::fromValue(handle);
 }

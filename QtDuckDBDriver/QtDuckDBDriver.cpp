@@ -102,7 +102,7 @@ class QDuckDBDriverPrivate : public QSqlDriverPrivate {
 public:
 	inline QDuckDBDriverPrivate() : QSqlDriverPrivate(QSqlDriver::SQLite) {
 	}
-	DbHandle *access = nullptr;
+	duckdb::unique_ptr<DbHandle> access = nullptr;
 	QList<QDuckDBResult *> results;
 };
 
@@ -676,7 +676,7 @@ bool QDuckDBDriver::open(const QString &db, const QString &, const QString &, co
 	}
 
 	try {
-		d->access = new DbHandle();
+		d->access = duckdb::make_uniq<DbHandle>();
 		duckdb::DBConfig config;
 		config.options.access_mode = duckdb::AccessMode::AUTOMATIC;
 		if (openReadOnlyOption) {
@@ -690,10 +690,7 @@ bool QDuckDBDriver::open(const QString &db, const QString &, const QString &, co
 			setLastError(qMakeError(errData, tr("Error opening database"), QSqlError::ConnectionError));
 			setOpenError(true);
 
-			if (d->access) {
-				delete d->access;
-				d->access = 0;
-			}
+			d->access.reset();
 			return false;
 		}
 	}
@@ -710,9 +707,7 @@ void QDuckDBDriver::close() {
 			result->d_func()->finalize();
 		}
 
-		if (d->access)
-			delete d->access;
-		d->access = 0;
+		d->access.reset();
 		setOpen(false);
 		setOpenError(false);
 	}

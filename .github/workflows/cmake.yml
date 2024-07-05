@@ -17,7 +17,7 @@ jobs:
           qt_version: ["5.15.2", "6.7.2"]
           exclude:
             - os: "macos-latest"
-            - qt_version: "5.15.2" # only available for x86, macos compiles on arm
+              qt_version: "5.15.2" # only available for x86, macos compiles on arm
     runs-on: ${{ matrix.os }}
 
     steps:

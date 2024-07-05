@@ -51,13 +51,15 @@ Full example can be found in the [example directory](./examples/TableWidget/## )
 
 ## Build requirements
 - [DuckDB](https://duckdb.org/) >= 0.7.1 (Included in this repo as submodule. just select your version there)  
-- [Qt6](https://www.qt.io/)  
+- [Qt](https://www.qt.io/) 6 or 5  
 
 DuckDB will be linked statically.  
 
 
 For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
 *tl;dr*: don't use the plugin on Qt version below the version it was build for.
+
+You can manually select the Qt Version with the cmake variable `QT_VERSION`== 5 or == 6. Otherwise, the auto detection will select the highest version.
 
 
 ## Prebuild MSVC DLL in the artifacts

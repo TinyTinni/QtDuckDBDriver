@@ -1,5 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Test Sql Widgets Concurrent)
-qt_standard_project_setup()
+find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Test Sql Widgets Concurrent)
 
 add_executable(Example_TableWidget "main.cpp")
 

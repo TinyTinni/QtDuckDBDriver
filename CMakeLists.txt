@@ -6,15 +6,17 @@ cmake_minimum_required (VERSION 3.23)
 set(CMAKE_PROJECT_INCLUDE_BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnableProjectCMP0048.cmake")
 project ("QtDuckDBDriver" VERSION 0.2.0) 
 
-option(BUILD_EXAMPLES OFF)
+option(QTDUCKDB_BUILD_EXAMPLES OFF)
+option(QTDUCKDB_BUILD_TESTS ON)
+include(cmake/DetectQtVersion.cmake)
 
 # Include sub-projects.
 add_subdirectory ("QtDuckDBDriver")
-include(CTest)
-if(BUILD_TESTING)
+if(QTDUCKDB_BUILD_TESTS)
+    include(CTest)
     add_subdirectory("tests")
 endif()
 
-if (BUILD_EXAMPLES)
+if (QTDUCKDB_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()

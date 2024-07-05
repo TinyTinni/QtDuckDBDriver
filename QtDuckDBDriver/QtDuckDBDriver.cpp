@@ -1,8 +1,11 @@
 #include "QtDuckDBDriver.h"
 
+#include "Qt5Compat.h"
+
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QList>
+#include <QScopedValueRollback>
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlIndex>
@@ -12,9 +15,6 @@
 #include <duckdb/parser/parser.hpp>
 #include <private/qsqlcachedresult_p.h>
 #include <private/qsqldriver_p.h>
-
-Q_DECLARE_OPAQUE_POINTER(DuckDBConnectionHandle *)
-Q_DECLARE_METATYPE(DuckDBConnectionHandle *)
 
 struct DbHandle {
 	duckdb::unique_ptr<duckdb::DuckDB> db;
@@ -36,8 +36,6 @@ struct DuckDBStmt {
 	int64_t last_changes = 0;
 };
 
-using namespace Qt::StringLiterals;
-
 static QString _q_escapeIdentifier(const QString &identifier, QSqlDriver::IdentifierType type) {
 	QString res = identifier;
 	// If it contains [ and ] then we assume it to be escaped properly already as this indicates
@@ -53,7 +51,7 @@ static QString _q_escapeIdentifier(const QString &identifier, QSqlDriver::Identi
 	return res;
 }
 
-static int qGetColumnType(const QString &tpName) {
+static QMetaType::Type qGetColumnType(const QString &tpName) {
 	const QString typeName = tpName.toLower();
 
 	if (typeName == "integer"_L1 || typeName == "int"_L1)
@@ -81,7 +79,6 @@ class QDuckDBResult : public QSqlCachedResult {
 public:
 	explicit QDuckDBResult(const QDuckDBDriver *db);
 	~QDuckDBResult();
-	QVariant handle() const override;
 
 protected:
 	bool gotoNext(QSqlCachedResult::ValueCache &row, int idx) override;
@@ -120,7 +117,7 @@ public:
 
 	std::unique_ptr<DuckDBStmt> stmt = nullptr;
 	QSqlRecord rInf;
-	QList<QVariant> firstRow;
+	QSqlCachedResult::ValueCache firstRow;
 	bool skippedStatus = false; // the status of the fetchNext() that's skipped
 	bool skipRow = false;       // skip the next fetchNext()?
 };
@@ -192,10 +189,10 @@ void QDuckDBResultPrivate::initColumns(bool emptyResultset) {
 	const auto &columnTypesVec = stmt->prepared->GetTypes();
 
 	for (duckdb::idx_t i = 0; i < nCols; ++i) {
-		QString colName = QString::fromUtf8(columnNamesVec[i]).remove(u'"');
+		QString colName = QString::fromStdString(columnNamesVec[i]).remove(u'"');
 		auto fieldType = duckdbTypeToQtType(columnTypesVec[i]);
 
-		QSqlField fld(colName, QMetaType(fieldType));
+		QSqlField fld(colName, toQtType(fieldType));
 		fld.setSqlType(fieldType);
 		rInf.append(fld);
 	}
@@ -342,7 +339,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 				if (!val.IsNull() && val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
 					values[i + idx] = QString::fromStdString(duckdb::StringValue::Get(val));
 				} else {
-					values[i + idx] = QVariant(QMetaType::fromType<QString>());
+					values[i + idx] = QVariant::fromValue(QString());
 				}
 				break;
 			}
@@ -484,14 +481,14 @@ bool QDuckDBResult::prepare(const QString &query) {
 bool QDuckDBResult::execBatch(bool arrayBind) {
 	Q_UNUSED(arrayBind);
 	Q_D(QSqlResult);
-	QScopedValueRollback<QList<QVariant>> valuesScope(d->values);
-	QList<QVariant> values = d->values;
+	QScopedValueRollback<QSqlCachedResult::ValueCache> valuesScope(d->values);
+	auto values = d->values;
 	if (values.size() == 0)
 		return false;
 
 	for (int i = 0; i < values.at(0).toList().size(); ++i) {
 		d->values.clear();
-		QScopedValueRollback<QHash<QString, QList<int>>> indexesScope(d->indexes);
+		QScopedValueRollback<QSqlResultPrivate::IndexMap> indexesScope(d->indexes);
 		auto it = d->indexes.constBegin();
 		while (it != d->indexes.constEnd()) {
 			bindValue(it.key(), values.at(it.value().first()).toList().at(i), QSql::In);
@@ -505,7 +502,7 @@ bool QDuckDBResult::execBatch(bool arrayBind) {
 
 bool QDuckDBResult::exec() {
 	Q_D(QDuckDBResult);
-	QList<QVariant> values = boundValues();
+	auto values = boundValues();
 
 	if (!d->stmt)
 		return false;
@@ -528,7 +525,7 @@ bool QDuckDBResult::exec() {
 
 	for (int i = 0; i < paramCount; ++i) {
 		const QVariant &value = values.at(i);
-		if (QSqlResultPrivate::isVariantNull(value)) {
+		if (value.isNull()) {
 			d->stmt->bound_values[i] = duckdb::Value();
 		} else {
 			switch (value.userType()) {
@@ -625,11 +622,6 @@ void QDuckDBResult::detachFromResultSet() {
 	}
 }
 
-QVariant QDuckDBResult::handle() const {
-	Q_D(const QDuckDBResult);
-	return QVariant::fromValue(d->stmt.get());
-}
-
 /////////////////////////////////////////////////////////
 
 QDuckDBDriver::QDuckDBDriver(QObject *parent) : QSqlDriver(*new QDuckDBDriverPrivate, parent) {
@@ -703,7 +695,7 @@ bool QDuckDBDriver::open(const QString &db, const QString &, const QString &, co
 void QDuckDBDriver::close() {
 	Q_D(QDuckDBDriver);
 	if (isOpen()) {
-		for (QDuckDBResult *result : std::as_const(d->results)) {
+		for (QDuckDBResult *result : qAsConst(d->results)) {
 			result->d_func()->finalize();
 		}
 
@@ -823,7 +815,7 @@ static QSqlIndex qGetTableInfo(QSqlQuery &q, const QString &tableName, bool only
 				defVal = defVal.mid(1, end - 1);
 		}
 
-		QSqlField fld(q.value(1).toString(), QMetaType(qGetColumnType(typeName)), tableName);
+		QSqlField fld(q.value(1).toString(), toQtType(qGetColumnType(typeName)), tableName);
 		if (isPk && (typeName == "integer"_L1))
 			// INTEGER PRIMARY KEY fields are auto-generated in sqlite
 			// INT PRIMARY KEY is not the same as INTEGER PRIMARY KEY!

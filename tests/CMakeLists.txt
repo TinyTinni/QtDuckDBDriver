@@ -1,6 +1,5 @@
 
-find_package(Qt6 REQUIRED COMPONENTS Test Sql)
-qt_standard_project_setup()
+find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Test Sql)
 
 add_executable(driver_tests "driver_tests.h" "main.cpp")
 add_test(NAME driver_tests COMMAND driver_tests)
@@ -8,6 +7,7 @@ set_tests_properties(driver_tests PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_od
 
 target_link_libraries(driver_tests PRIVATE Qt::Test Qt::Sql QtDuckDBDriver)
 set_property(TARGET driver_tests PROPERTY AUTOMOC ON)
+set_property(TARGET driver_tests PROPERTY CXX_STANDARD 14)
 
 if (WIN32)
     add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different

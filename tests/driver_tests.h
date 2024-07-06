@@ -180,15 +180,15 @@ private slots:
 		bool ok = m_db->open();
 		QVERIFY(ok);
 		auto handle = m_db->driver()->handle().value<DuckDBConnectionHandle>();
-		QCOMPARE_NE(handle.db, nullptr);
-		QCOMPARE_NE(handle.connection, nullptr);
+		QVERIFY(handle.db);
+		QVERIFY(handle.connection);
 		auto result = handle.connection->SendQuery(R"(CREATE TABLE weather (
-            city           VARCHAR,
-            temp_lo        INTEGER, 
-            temp_hi        INTEGER,
-            prcp           REAL,
-            date           DATE
-        ))");
+	        city           VARCHAR,
+	        temp_lo        INTEGER,
+	        temp_hi        INTEGER,
+	        prcp           REAL,
+	        date           DATE
+	    ))");
 		if (result->HasError())
 			qDebug() << result->GetError().c_str();
 		QVERIFY(!result->HasError());
@@ -312,6 +312,6 @@ private slots:
 		    R"(INSERT INTO Persons (LastName, FirstName, Age) VALUES ('Doe', 'John', 99) RETURNING (Personid);)");
 		checkError(query);
 		QVERIFY(query.next());
-		QCOMPARE_EQ(query.value(0).toInt(), 1);
+		QCOMPARE(query.value(0).toInt(), 1);
 	}
 };

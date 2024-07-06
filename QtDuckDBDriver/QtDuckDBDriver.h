@@ -45,3 +45,5 @@ public:
 	QVariant handle() const override;
 	QString escapeIdentifier(const QString &identifier, IdentifierType) const override;
 };
+
+Q_DECLARE_METATYPE(DuckDBConnectionHandle)

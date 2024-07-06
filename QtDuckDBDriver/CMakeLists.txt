@@ -2,7 +2,7 @@
 # project specific logic here.
 #
 
-find_package(Qt6 REQUIRED COMPONENTS Sql)
+find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Sql)
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 
 add_subdirectory(duckdb)
@@ -11,8 +11,8 @@ add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 14)
-target_link_libraries(QtDuckDBDriver PUBLIC Qt6::Sql duckdb_static)
-target_include_directories(QtDuckDBDriver PRIVATE "${Qt6Sql_PRIVATE_INCLUDE_DIRS}")
+target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static)
+target_include_directories(QtDuckDBDriver PRIVATE "${Qt${QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
 set_property(TARGET QtDuckDBDriver PROPERTY AUTOMOC ON)
 set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")

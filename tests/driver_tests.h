@@ -314,4 +314,23 @@ private slots:
 		QVERIFY(query.next());
 		QCOMPARE(query.value(0).toInt(), 1);
 	}
+
+	void returnSimplePrimaryKey() {
+		QVERIFY(m_db->open());
+		QSqlQuery query(*m_db);
+		query.exec(R"(CREATE SEQUENCE seq_personid START 1;)");
+		checkError(query);
+		query.exec(R"(CREATE TABLE Persons (
+					Personid integer primary key default nextval('seq_personid'),
+					LastName varchar(255) not null,
+					FirstName varchar(255),
+					Age integer
+					);)");
+		checkError(query);
+		auto index = m_db->primaryIndex("Persons");
+		auto count = index.count();
+		auto fieldName = index.fieldName(0);
+		QCOMPARE(count, 1);
+		QCOMPARE(fieldName, "Personid");
+	}
 };

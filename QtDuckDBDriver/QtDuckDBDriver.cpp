@@ -761,10 +761,8 @@ QStringList QDuckDBDriver::tables(QSql::TableType type) const {
 
 	QString system_tables = (type & QSql::SystemTables) ? "" : "WHERE internal = 'FALSE'";
 
-	QString table_sql = QString("SELECT table_name FROM duckdb_tables() %1;").arg(system_tables);
-	QString view_sql = QString("SELECT view_name FROM duckdb_views() %1;").arg(system_tables);
-
 	if (type & QSql::Tables) {
+		QString table_sql = QString("SELECT table_name FROM duckdb_tables() %1;").arg(system_tables);
 		if (!table_sql.isEmpty() && q.exec(table_sql)) {
 			while (q.next())
 				res.append(q.value(0).toString());
@@ -772,6 +770,7 @@ QStringList QDuckDBDriver::tables(QSql::TableType type) const {
 	}
 
 	if (type & QSql::Views) {
+		QString view_sql = QString("SELECT view_name FROM duckdb_views() %1;").arg(system_tables);
 		if (!view_sql.isEmpty() && q.exec(view_sql)) {
 			while (q.next())
 				res.append(q.value(0).toString());

@@ -325,13 +325,13 @@ private slots:
 		query.exec("INSERT INTO employee VALUES ('Tina', 6500);");
 		query.exec("INSERT INTO employee VALUES ('Alice', 6500);");
 
-		QSqlTableModel *model = new QSqlTableModel(nullptr, *m_db);
-		model->setTable("employee");
-		model->select();
+		QSqlTableModel model(nullptr, *m_db);
+		model.setTable("employee");
+		model.select();
 
-		QCOMPARE(model->rowCount(), 4);
-		QCOMPARE(model->columnCount(), 2);
-		QCOMPARE(model->data(model->index(2, 0)).toString(), "Tina");
+		QCOMPARE(model.rowCount(), 4);
+		QCOMPARE(model.columnCount(), 2);
+		QCOMPARE(model.data(model.index(2, 0)).toString(), "Tina");
 	}
 
 	void returnSimplePrimaryKey() {

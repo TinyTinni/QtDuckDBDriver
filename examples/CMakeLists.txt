@@ -1,1 +1,2 @@
 add_subdirectory(TableWidget)
+add_subdirectory(AutoCompletion)

@@ -352,4 +352,22 @@ private slots:
 		QCOMPARE(count, 1);
 		QCOMPARE(fieldName, "Personid");
 	}
+
+	void autoCompleterExtension() {
+		QVERIFY(m_db->open());
+		QSqlQuery query(*m_db);
+		query.exec(R"(CREATE TABLE weather (
+            city           VARCHAR,
+            temp_lo        INTEGER, 
+            temp_hi        INTEGER,
+            prcp           REAL,
+            date           DATE
+        ); )");
+		checkError(query);
+		// action
+		query.exec(R"(SELECT * FROM sql_auto_complete('SELECT ci'); )");
+		checkError(query);
+		QVERIFY(query.next());
+		QCOMPARE(query.value(0).toString(), "city");
+	}
 };

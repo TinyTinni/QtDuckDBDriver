@@ -695,7 +695,7 @@ bool QDuckDBDriver::open(const QString &db, const QString &, const QString &, co
 void QDuckDBDriver::close() {
 	Q_D(QDuckDBDriver);
 	if (isOpen()) {
-		for (QDuckDBResult *result : std::as_const(d->results)) {
+		for (QDuckDBResult *result : qtAsConst(d->results)) {
 			result->d_func()->finalize();
 		}
 

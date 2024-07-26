@@ -589,9 +589,7 @@ bool QDuckDBResult::gotoNext(QSqlCachedResult::ValueCache &row, int idx) {
 
 int QDuckDBResult::size() {
 	Q_D(QDuckDBResult);
-	if (!d->stmt || !d->stmt->prepared)
-		return 0;
-	return d->stmt->prepared->ColumnCount();
+	return 0;
 }
 
 int QDuckDBResult::numRowsAffected() {
@@ -640,9 +638,9 @@ bool QDuckDBDriver::hasFeature(DriverFeature f) const {
 	case PositionalPlaceholders:
 	case SimpleLocking:
 	case FinishQuery:
-	case LowPrecisionNumbers: // unsure
-	case QuerySize:
+	case LowPrecisionNumbers:
 		return true;
+	case QuerySize:
 	case LastInsertId:
 	case NamedPlaceholders:
 	case EventNotifications:

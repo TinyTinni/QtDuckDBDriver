@@ -12,10 +12,11 @@ int main(int argc, char *argv[]) {
 	QSqlDatabase db = QSqlDatabase::addDatabase("DUCKDB");
 
 	db.open();
-	db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
-	db.exec("INSERT INTO employee VALUES ('Paul', 5000);");
-	db.exec("INSERT INTO employee VALUES ('Bert', 5500);");
-	db.exec("INSERT INTO employee VALUES ('Tina', 6500);");
+	QSqlQuery query(db);
+	query.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
+	query.exec("INSERT INTO employee VALUES ('Paul', 5000);");
+	query.exec("INSERT INTO employee VALUES ('Bert', 5500);");
+	query.exec("INSERT INTO employee VALUES ('Tina', 6500);");
 
 	QLineEdit *lineEdit = new QLineEdit();
 

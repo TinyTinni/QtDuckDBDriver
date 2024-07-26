@@ -7,6 +7,7 @@
 #include <QSqlIndex>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QSqlTableModel>
 #include <QTest>
 #include <duckdb.hpp>
 #include <memory>
@@ -313,6 +314,24 @@ private slots:
 		checkError(query);
 		QVERIFY(query.next());
 		QCOMPARE(query.value(0).toInt(), 1);
+	}
+
+	void exampleTableModel() {
+		QVERIFY(m_db->open());
+		QSqlQuery query(*m_db);
+		query.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER);");
+		query.exec("INSERT INTO employee VALUES ('Paul', 5000);");
+		query.exec("INSERT INTO employee VALUES ('Bert', 5500);");
+		query.exec("INSERT INTO employee VALUES ('Tina', 6500);");
+		query.exec("INSERT INTO employee VALUES ('Alice', 6500);");
+
+		QSqlTableModel *model = new QSqlTableModel(nullptr, *m_db);
+		model->setTable("employee");
+		model->select();
+
+		QCOMPARE(model->rowCount(), 4);
+		QCOMPARE(model->columnCount(), 2);
+		QCOMPARE(model->data(model->index(2, 0)).toString(), "Tina");
 	}
 
 	void returnSimplePrimaryKey() {

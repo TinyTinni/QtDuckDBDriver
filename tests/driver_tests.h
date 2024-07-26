@@ -349,6 +349,6 @@ private slots:
 		query.exec(R"(SELECT * FROM sql_auto_complete('SELECT ci'); )");
 		checkError(query);
 		QVERIFY(query.next());
-		QCOMPARE_EQ(query.value(0).toString(), "city");
+		QCOMPARE(query.value(0).toString(), "city");
 	}
 };

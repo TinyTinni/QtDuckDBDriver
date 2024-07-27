@@ -30,9 +30,9 @@ jobs:
       with:
         path: |
           ./build
-        key: ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.qt_version }}
+          ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3

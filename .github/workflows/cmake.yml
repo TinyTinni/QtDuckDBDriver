@@ -52,8 +52,8 @@ jobs:
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja
         -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-        ${{ matrix.os == 'macos-latest' && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
-        ${{ matrix.os == 'macos-latest' && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}       
+        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
+        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}       
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
         -DQTDUCKDB_BUILD_TESTS=ON 

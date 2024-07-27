@@ -8,8 +8,6 @@ on:
 
 env:
   BUILD_TYPE: Release
-  CCACHE_BASEDIR: "$ENV{GITHUB_WORKSPACE}"
-  CCACHE_DIR: .ccache
 
 jobs:
    build:
@@ -51,6 +49,9 @@ jobs:
         ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
 
     - name: Configure CMake
+      env:
+        CCACHE_BASEDIR: "$ENV{GITHUB_WORKSPACE}"
+        CCACHE_DIR: .ccache
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja
         -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}

@@ -10,11 +10,6 @@ option(QTDUCKDB_BUILD_EXAMPLES OFF)
 option(QTDUCKDB_BUILD_TESTS ON)
 include(cmake/DetectQtVersion.cmake)
 
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-endif()
-
 # Include sub-projects.
 add_subdirectory ("QtDuckDBDriver")
 if(QTDUCKDB_BUILD_TESTS)

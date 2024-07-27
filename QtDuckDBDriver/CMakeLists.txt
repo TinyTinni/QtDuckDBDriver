@@ -36,8 +36,8 @@ endif(NOT WIN32)
 install(TARGETS QtDuckDBDriver RUNTIME DESTINATION "bin")
 install(FILES "QtDuckDBDriver.h" DESTINATION "include")
 install(FILES ../README.md ../LICENSE DESTINATION ".")
-#install(DIRECTORY "${PROJECT_SOURCE_DIR}/QtDuckDBDriver/duckdb/src/include/"
-#          DESTINATION "include")
+install(DIRECTORY "${duckdb_SOURCE_DIR}/src/include/"
+          DESTINATION "include")
 include(CPack)
 
 ADD_CUSTOM_TARGET( bundle

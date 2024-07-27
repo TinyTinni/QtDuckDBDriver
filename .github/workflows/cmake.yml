@@ -54,13 +54,8 @@ jobs:
         ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
 
     - name: Configure CMake
-      env:
-        CCACHE_BASEDIR: "$ENV{GITHUB_WORKSPACE}"
-        CCACHE_DIR: .ccache
       run: cmake -B ${{github.workspace}}/build 
-        -G Ninja
-        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
-        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}     
+        -G Ninja  
         -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}     
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
@@ -95,6 +90,7 @@ jobs:
 
     - name: ccache stats
       run: ccache -s
+      if: matrix.os != 'macos-latest'
 
 
 

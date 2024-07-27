@@ -13,7 +13,7 @@ jobs:
    build:
     strategy:
       matrix:
-          os: ["windows-latest", "ubuntu-latest"] #, "macos-latest"]
+          os: ["windows-latest", "ubuntu-latest", "macos-latest"]
           qt_version: ["5.15.2", "6.7.2"]
           exclude:
             - os: "macos-latest"
@@ -46,14 +46,14 @@ jobs:
       with:
         vcvarsall: ${{ contains(matrix.os, 'windows' )}}
         ninja: true
-        ccache: true
+        ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja
         -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        ${{ matrix.os == 'macos-latest' && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
+        ${{ matrix.os == 'macos-latest' && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}       
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
         -DQTDUCKDB_BUILD_TESTS=ON 

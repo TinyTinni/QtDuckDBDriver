@@ -8,7 +8,9 @@ project ("QtDuckDBDriver" VERSION 0.2.1)
 
 option(QTDUCKDB_BUILD_EXAMPLES OFF)
 option(QTDUCKDB_BUILD_TESTS ON)
+
 include(cmake/DetectQtVersion.cmake)
+include(cmake/QtDuckDBProperties.cmake)
 
 # Include sub-projects.
 add_subdirectory ("QtDuckDBDriver")

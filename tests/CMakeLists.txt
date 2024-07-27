@@ -1,34 +1,4 @@
-
-find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Test Sql)
-
 add_executable(driver_tests "driver_tests.h" "main.cpp")
 add_test(NAME driver_tests COMMAND driver_tests)
 set_tests_properties(driver_tests PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_odr_violation=0")
-
-target_link_libraries(driver_tests PRIVATE Qt::Test Qt::Sql QtDuckDBDriver)
-set_property(TARGET driver_tests PROPERTY AUTOMOC ON)
-set_property(TARGET driver_tests PROPERTY CXX_STANDARD 14)
-
-if (WIN32)
-    add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_RUNTIME_DLLS:driver_tests> $<TARGET_FILE_DIR:driver_tests>
-            COMMAND_EXPAND_LISTS)
-endif()
-
-add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory 
-            "$<TARGET_FILE_DIR:driver_tests>/plugins/sqldrivers/")
-add_custom_command(TARGET driver_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:QtDuckDBDriver> "$<TARGET_FILE_DIR:driver_tests>/plugins/sqldrivers/")
-
-if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build
-    if (ENABLE_SANITIZER)
-        target_compile_options(driver_tests PRIVATE -fsanitize=address)
-        target_link_options(driver_tests PRIVATE -fsanitize=address)
-    endif()
-
-    if (ENABLE_UBSAN)
-        target_compile_options(driver_tests PRIVATE -fsanitize=undefined)
-        target_link_options(driver_tests PRIVATE -fsanitize=undefined)
-    endif()
-endif(NOT WIN32)
-
+add_qtduckdb_properties(driver_tests)

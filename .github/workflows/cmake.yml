@@ -8,7 +8,8 @@ on:
 
 env:
   BUILD_TYPE: Release
-  CCACHE_DIR: ~/.ccache
+  CCACHE_BASEDIR: "$ENV{GITHUB_WORKSPACE}"
+  CCACHE_DIR: .ccache
 
 jobs:
    build:
@@ -30,7 +31,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/.ccache
+          .ccache
         key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}

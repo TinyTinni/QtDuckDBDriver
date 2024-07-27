@@ -31,7 +31,6 @@ jobs:
       with:
         path: |
           "${{ github.workspace }}/cpm_modules"
-          "${{ github.workspace }}/build/_deps"
         key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}

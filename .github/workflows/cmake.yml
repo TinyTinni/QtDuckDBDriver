@@ -8,6 +8,12 @@ on:
 
 env:
   BUILD_TYPE: Release
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 6
+  CCACHE_MAXSIZE: 400M
 
 jobs:
    build:
@@ -22,30 +28,41 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true
     
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/.ccache
+          ${{ github.workspace }}/cpm_modules
+        key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: ${{matrix.qt_version}}
         target: 'desktop'
-    
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
+        cache: true
 
-    - name: Install Ninja
-      if: matrix.os != 'windows-latest'
-      shell: bash
-      run: | 
-        ${{ matrix.os == 'macos-latest' && 'brew install ninja' || matrix.os == 'ubuntu-latest' && 'sudo apt-get install ninja-build' }}
-        echo "CMAKE_GENERATOR='-G Ninja'" >> $GITHUB_ENV
+    - name: Setup Cpp
+      uses: aminya/setup-cpp@v1
+      with:
+        vcvarsall: ${{ contains(matrix.os, 'windows' )}}
+        ninja: true
+        ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
+
+    - name: Setup ccache
+      uses: Chocobo1/setup-ccache-action@v1
+      if: matrix.os == 'macos-latest'
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build ${{env.CMAKE_GENERATOR}}
-        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build 
+        -G Ninja  
         -DCMAKE_C_COMPILER_LAUNCHER=ccache
         -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}     
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
         -DQTDUCKDB_BUILD_TESTS=ON 
@@ -76,6 +93,9 @@ jobs:
         name: Windows-QtDuckDBDriver-DLL-qt${{matrix.qt_version}}
         path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
         compression-level: 0
+
+    - name: ccache stats
+      run: ccache -s
 
 
 

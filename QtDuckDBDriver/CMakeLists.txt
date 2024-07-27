@@ -5,7 +5,8 @@
 find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Sql)
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{QTDIR}")
 
-add_subdirectory(duckdb)
+include(../cmake/CPM.cmake)
+CPMAddPackage("gh:duckdb/duckdb#v1.0.0")
 
 add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
@@ -35,7 +36,7 @@ endif(NOT WIN32)
 install(TARGETS QtDuckDBDriver RUNTIME DESTINATION "bin")
 install(FILES "QtDuckDBDriver.h" DESTINATION "include")
 install(FILES ../README.md ../LICENSE DESTINATION ".")
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/QtDuckDBDriver/duckdb/src/include/"
+install(DIRECTORY "${duckdb_SOURCE_DIR}/src/include/"
           DESTINATION "include")
 include(CPack)
 

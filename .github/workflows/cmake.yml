@@ -9,8 +9,11 @@ on:
 env:
   BUILD_TYPE: Release
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
-
-
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 6
+  CCACHE_MAXSIZE: 400M
 
 jobs:
    build:
@@ -30,8 +33,8 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          "cpm_modules/**"
-          "build/_deps/**"
+          ${{ github.workspace }}/.ccache
+          ${{ github.workspace }}/cpm_modules
         key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}
@@ -56,6 +59,8 @@ jobs:
         CCACHE_DIR: .ccache
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja
+        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
+        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}     
         -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}     
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
@@ -87,6 +92,9 @@ jobs:
         name: Windows-QtDuckDBDriver-DLL-qt${{matrix.qt_version}}
         path: ${{github.workspace}}/build/QtDuckDBDriver/QtDuckDBDriver-*
         compression-level: 0
+
+    - name: ccache stats
+      run: ccache -s
 
 
 

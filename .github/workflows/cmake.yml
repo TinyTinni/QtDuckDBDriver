@@ -8,6 +8,9 @@ on:
 
 env:
   BUILD_TYPE: Release
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+
+
 
 jobs:
    build:
@@ -22,14 +25,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true
     
     - name: Cache
       uses: actions/cache@v3
       with:
-        path: |
-          .ccache
+        path: "**/cpm_modules"
         key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}
@@ -39,7 +39,7 @@ jobs:
       with:
         version: ${{matrix.qt_version}}
         target: 'desktop'
-        cache: 'true'
+        cache: true
 
     - name: Setup Cpp
       uses: aminya/setup-cpp@v1
@@ -54,9 +54,7 @@ jobs:
         CCACHE_DIR: .ccache
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja
-        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_C_COMPILER_LAUNCHER=ccache' }}
-        ${{ contains(matrix.os, 'macos') && '' || '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache' }}       
+        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}     
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
         -DQTDUCKDB_BUILD_TESTS=ON 

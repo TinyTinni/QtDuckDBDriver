@@ -51,7 +51,7 @@ Which results in the following widget:
 Full example can be found in the [example directory](./examples/TableWidget/## )
 
 ## Build requirements
-- [DuckDB](https://duckdb.org/) >= 0.7.1 (Included in this repo as submodule. just select your version there)  
+- [DuckDB](https://duckdb.org/) >= 0.7.1 (Version can be defined in the [CMakeLists.txt](./QtDuckDBDriver/CMakeLists.txt))  
 - [Qt](https://www.qt.io/) 6 or 5  
 
 DuckDB will be linked statically.  

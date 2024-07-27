@@ -97,7 +97,7 @@ class QDuckDBDriverPrivate : public QSqlDriverPrivate {
 	Q_DECLARE_PUBLIC(QDuckDBDriver)
 
 public:
-	inline QDuckDBDriverPrivate() : QSqlDriverPrivate(QSqlDriver::SQLite) {
+	inline QDuckDBDriverPrivate() : QSqlDriverPrivate(QSqlDriver::UnknownDbms) {
 	}
 	duckdb::unique_ptr<DbHandle> access = nullptr;
 	QList<QDuckDBResult *> results;

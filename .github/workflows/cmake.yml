@@ -53,6 +53,10 @@ jobs:
         ninja: true
         ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
 
+    - name: Setup ccache
+      uses: Chocobo1/setup-ccache-action@v1
+      if: matrix.os == 'macos-latest'
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build 
         -G Ninja  
@@ -90,7 +94,6 @@ jobs:
 
     - name: ccache stats
       run: ccache -s
-      if: matrix.os != 'macos-latest'
 
 
 

@@ -72,7 +72,10 @@ jobs:
         -DBUILD_EXTENSIONS="autocomplete"
 
     - name: Build Tests
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{steps.cpus.outputs.count}} -t driver_tests
+      run: cmake 
+        --build ${{github.workspace}}/build 
+        --config ${{env.BUILD_TYPE}} 
+        -j ${{steps.cpus.outputs.count}} 
 
     - name: Test
       working-directory: ${{github.workspace}}/build

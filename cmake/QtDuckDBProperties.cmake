@@ -1,8 +1,8 @@
 function(add_qtduckdb_properties TARGET)
     find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Test Sql Widgets)
-    target_link_libraries(${TARGET} PRIVATE Qt::Test Qt::Sql Qt::Widgets QtDuckDBDriver)
+    target_link_libraries(${TARGET} PRIVATE Qt::Sql QtDuckDBDriver)
     set_property(TARGET ${TARGET} PROPERTY AUTOMOC ON)
-    set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 14)
+    set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 17)
 
     if (WIN32)
         add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different

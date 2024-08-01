@@ -29,21 +29,18 @@ int main(int argc, char *argv[]) {
 	completer->setModel(model);
 
 	QObject::connect(lineEdit, &QLineEdit::textChanged, completer, [completer, db, model](QString text) {
-		QStringList prev = text.split(' ');
-		if (!prev.isEmpty())
+		QString prevText;
+		if (QStringList prev = text.split(' '); prev.size() > 1) {
 			prev.removeLast();
-		QString prevText = prev.join(' ');
-		if (!prevText.isEmpty())
-			prevText += ' ';
+			prevText = prev.join(' ') + ' ';
+		}
 
-		QSqlQuery query;
+		QSqlQuery query(db);
 		query.exec(QString("SELECT * FROM sql_auto_complete('%1');").arg(text));
 
 		QStringList list;
 		while (query.next()) {
-			QString result = query.value(0).toString();
-			QString completionText = prevText + result;
-			list.append(completionText);
+			list.append(prevText + query.value(0).toString());
 		}
 		model->setStringList(std::move(list));
 	});

@@ -1,6 +1,6 @@
 function(add_qtduckdb_properties TARGET)
     find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Test Sql Widgets)
-    target_link_libraries(${TARGET} PRIVATE Qt::Test Qt::Sql QtDuckDBDriver)
+    target_link_libraries(${TARGET} PRIVATE Qt::Test Qt::Sql Qt::Widgets QtDuckDBDriver)
     set_property(TARGET ${TARGET} PROPERTY AUTOMOC ON)
     set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 14)
 

@@ -18,9 +18,9 @@ int main(int argc, char *argv[]) {
 	query.exec("INSERT INTO employee VALUES ('Bert', 5500);");
 	query.exec("INSERT INTO employee VALUES ('Tina', 6500);");
 
-	QLineEdit *lineEdit = new QLineEdit();
+	auto lineEdit = new QLineEdit();
 
-	auto *completer = new QCompleter(lineEdit);
+	auto completer = new QCompleter(lineEdit);
 	lineEdit->setCompleter(completer);
 	completer->setCompletionMode(QCompleter::UnfilteredPopupCompletion);
 	completer->setCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);

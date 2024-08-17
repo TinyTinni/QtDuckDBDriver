@@ -9,3 +9,4 @@
 /build
 CMakeSettings.json
 *.user
+Testing/*

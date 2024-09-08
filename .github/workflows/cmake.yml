@@ -51,11 +51,7 @@ jobs:
       with:
         vcvarsall: ${{ contains(matrix.os, 'windows' )}}
         ninja: true
-        ccache: ${{ !contains(matrix.os, 'macos' )}} # https://github.com/aminya/setup-cpp/issues/247
-
-    - name: Setup ccache
-      uses: Chocobo1/setup-ccache-action@v1
-      if: matrix.os == 'macos-latest'
+        ccache: true
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build 

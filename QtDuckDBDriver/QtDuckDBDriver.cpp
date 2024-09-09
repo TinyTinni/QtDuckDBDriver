@@ -466,7 +466,7 @@ bool QDuckDBResult::prepare(const QString &query) {
 		d->stmt->context = db->con->context;
 		d->stmt->prepared = std::move(prepared);
 		d->stmt->current_row = -1;
-		d->stmt->bound_values.resize(d->stmt->prepared->n_param);
+		d->stmt->bound_values.resize(d->stmt->prepared->named_param_map.size());
 
 		return true;
 	} catch (std::exception &ex) {
@@ -516,7 +516,7 @@ bool QDuckDBResult::exec() {
 	d->stmt->result.reset();
 	d->stmt->current_chunk.reset();
 
-	int paramCount = d->stmt->prepared->n_param;
+	int paramCount = d->stmt->prepared->named_param_map.size();
 	if (paramCount != values.size()) {
 		setLastError(QSqlError(QCoreApplication::translate("QDuckDBResult", "Parameter count mismatch"), QString(),
 		                       QSqlError::StatementError));

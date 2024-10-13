@@ -40,7 +40,7 @@ jobs:
           ${{ runner.os }}-${{ matrix.os }}-${{ matrix.qt_version }}
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v4
+      uses: jurplel/install-qt-action@master
       with:
         version: ${{matrix.qt_version}}
         target: 'desktop'

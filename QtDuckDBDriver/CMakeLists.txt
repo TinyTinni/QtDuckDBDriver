@@ -5,7 +5,7 @@
 find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Sql)
 
 include(../cmake/get_cpm.cmake)
-CPMAddPackage("gh:duckdb/duckdb#v1.1.1")
+CPMAddPackage("gh:duckdb/duckdb#v1.1.2")
 
 add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")

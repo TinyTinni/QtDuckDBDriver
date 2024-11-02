@@ -7,6 +7,9 @@ find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Sql)
 include(../cmake/get_cpm.cmake)
 CPMAddPackage("gh:duckdb/duckdb#v1.1.2")
 
+get_property(duckdb_include_dirs TARGET duckdb_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+set_property(TARGET duckdb_static PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${duckdb_include_dirs}")
+
 add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 

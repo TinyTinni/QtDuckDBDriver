@@ -13,6 +13,7 @@
 #include <QVariant>
 #include <duckdb.hpp>
 #include <duckdb/parser/parser.hpp>
+#include <optional>
 #include <private/qsqlcachedresult_p.h>
 #include <private/qsqldriver_p.h>
 
@@ -30,7 +31,7 @@ struct DuckDBStmt {
 	//! The current chunk that we are iterating over
 	duckdb::unique_ptr<duckdb::DataChunk> current_chunk;
 	//! The current row into the current chunk that we are iterating over
-	int64_t current_row;
+	std::optional<duckdb::idx_t> current_row;
 	//! Bound values, used for binding to the prepared statement
 	duckdb::vector<duckdb::Value> bound_values;
 	int64_t last_changes = 0;
@@ -110,7 +111,7 @@ public:
 	Q_DECLARE_SQLDRIVER_PRIVATE(QDuckDBDriver)
 	using QSqlCachedResultPrivate::QSqlCachedResultPrivate;
 	void cleanup();
-	bool fetchNext(QSqlCachedResult::ValueCache &values, int idx, bool initialFetch);
+	bool fetchNext(QSqlCachedResult::ValueCache &values, qsizetype idx, bool initialFetch);
 	// initializes the recordInfo and the cache
 	void initColumns(bool emptyResultset);
 	void finalize();
@@ -174,7 +175,7 @@ QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
 	}
 }
 
-void QDuckDBResultPrivate::initColumns(bool emptyResultset) {
+void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
 	Q_Q(QDuckDBResult);
 	if (!stmt || !stmt->prepared)
 		return;
@@ -183,7 +184,8 @@ void QDuckDBResultPrivate::initColumns(bool emptyResultset) {
 	if (nCols <= 0)
 		return;
 
-	q->init(nCols);
+	assert(nCols <= std::numeric_limits<int>::max());
+	q->init(static_cast<int>(nCols));
 
 	const auto &columnNamesVec = stmt->prepared->GetNames();
 	const auto &columnTypesVec = stmt->prepared->GetTypes();
@@ -200,14 +202,14 @@ void QDuckDBResultPrivate::initColumns(bool emptyResultset) {
 
 ///////////////////////
 
-bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int idx, bool initialFetch) {
+bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsizetype idx, bool initialFetch) {
 	Q_Q(QDuckDBResult);
 
 	if (skipRow) {
 		// already fetched
 		Q_ASSERT(!initialFetch);
 		skipRow = false;
-		for (int i = 0; i < firstRow.size(); i++)
+		for (qsizetype i = 0; i < firstRow.size(); i++)
 			values[i] = firstRow[i];
 		return skippedStatus;
 	}
@@ -216,7 +218,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 	if (initialFetch) {
 		firstRow.clear();
 		if (stmt && stmt->prepared)
-			firstRow.resize(stmt->prepared->ColumnCount());
+			firstRow.resize(static_cast<qsizetype>(stmt->prepared->ColumnCount()));
 	}
 
 	if (!stmt || !stmt->context) {
@@ -291,20 +293,22 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 	};
 
 	auto fillRow = [&]() {
+		assert(stmt->current_row.has_value());
 		//// check to see if should fill out columns
 		if (rInf.isEmpty())
 			// must be first call.
 			initColumns(false);
 		if (idx < 0 && !initialFetch)
 			return true;
-		for (int i = 0; i < rInf.count(); ++i) {
+		const qsizetype rowCount = rInf.count();
+		for (qsizetype i = 0; i < rowCount; ++i) {
 
-			duckdb::Value val = stmt->current_chunk->data[i].GetValue(stmt->current_row);
+			duckdb::Value val = stmt->current_chunk->data[static_cast<size_t>(i)].GetValue(*stmt->current_row);
 			switch (val.type().id()) {
 			case duckdb::LogicalTypeId::BLOB: {
 				val = val.CastAs(*stmt->context, duckdb::LogicalType::BLOB);
 				const auto &str = duckdb::StringValue::Get(val);
-				values[i + idx] = QByteArray(str.data(), str.size());
+				values[i + idx] = QByteArray(str.data(), static_cast<qsizetype>(str.size()));
 				break;
 			}
 			case duckdb::LogicalTypeId::BOOLEAN:
@@ -358,14 +362,17 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, int i
 			return false;
 		}
 
-		stmt->current_row = -1;
+		stmt->current_row = std::nullopt;
 		collectStats();
 	}
 	if (isDone()) {
 		return false;
 	}
-	stmt->current_row++;
-	if (stmt->current_row >= (int32_t)stmt->current_chunk->size()) {
+	if (stmt->current_row.has_value())
+		++(*stmt->current_row);
+	else
+		stmt->current_row = 0;
+	if (*(stmt->current_row) >= stmt->current_chunk->size()) {
 		// have to fetch again!
 		stmt->current_row = 0;
 		if (!fetchNext()) {
@@ -516,15 +523,16 @@ bool QDuckDBResult::exec() {
 	d->stmt->result.reset();
 	d->stmt->current_chunk.reset();
 
-	int paramCount = d->stmt->prepared->named_param_map.size();
-	if (paramCount != values.size()) {
+	size_t paramCount = d->stmt->prepared->named_param_map.size();
+	if (paramCount != static_cast<size_t>(values.size())) {
 		setLastError(QSqlError(QCoreApplication::translate("QDuckDBResult", "Parameter count mismatch"), QString(),
 		                       QSqlError::StatementError));
 		return false;
 	}
 
-	for (int i = 0; i < paramCount; ++i) {
-		const QVariant &value = values.at(i);
+	assert(paramCount <= std::numeric_limits<qsizetype>::max());
+	for (size_t i = 0; i < paramCount; ++i) {
+		const QVariant &value = values.at(static_cast<qsizetype>(i));
 		if (value.isNull()) {
 			d->stmt->bound_values[i] = duckdb::Value();
 		} else {
@@ -584,11 +592,11 @@ bool QDuckDBResult::exec() {
 
 bool QDuckDBResult::gotoNext(QSqlCachedResult::ValueCache &row, int idx) {
 	Q_D(QDuckDBResult);
-	return d->fetchNext(row, idx, false);
+	return d->fetchNext(row, static_cast<qsizetype>(idx), false);
 }
 
 int QDuckDBResult::size() {
-	Q_D(QDuckDBResult);
+	// Q_D(QDuckDBResult);
 	return 0;
 }
 
@@ -597,11 +605,12 @@ int QDuckDBResult::numRowsAffected() {
 	if (!d->stmt)
 		return -1;
 
-	return d->stmt->last_changes;
+	assert(d->stmt->last_changes <= std::numeric_limits<int>::max());
+	return static_cast<int>(d->stmt->last_changes);
 }
 
 QVariant QDuckDBResult::lastInsertId() const {
-	Q_D(const QDuckDBResult);
+	// Q_D(const QDuckDBResult);
 	return QVariant();
 }
 
@@ -807,7 +816,7 @@ static QSqlIndex qGetTableInfo(QSqlQuery &q, const QString &tableName, bool only
 		QString typeName = q.value(2).toString().toLower();
 		QString defVal = q.value(4).toString();
 		if (!defVal.isEmpty() && defVal.at(0) == u'\'') {
-			const int end = defVal.lastIndexOf(u'\'');
+			const auto end = defVal.lastIndexOf(u'\'');
 			if (end > 0)
 				defVal = defVal.mid(1, end - 1);
 		}

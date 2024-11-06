@@ -4,6 +4,12 @@ function(add_qtduckdb_properties TARGET)
     set_property(TARGET ${TARGET} PROPERTY AUTOMOC ON)
     set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 17)
 
+    target_compile_options(${TARGET} PRIVATE
+     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+          -Wall -Wextra -Wconversion -pedantic-errors -Wsign-conversion>
+     $<$<CXX_COMPILER_ID:MSVC>:
+          /W4>)
+
     if (WIN32)
         add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_RUNTIME_DLLS:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>

@@ -7,7 +7,7 @@
 
 // replaces "using namespace Qt::StringLiterals;"
 QLatin1String operator""_L1(const char *c, size_t s) {
-	return QLatin1String(c, s);
+	return QLatin1String(c, static_cast<int>(s));
 }
 
 QVariant::Type toQtType(QMetaType::Type type) {

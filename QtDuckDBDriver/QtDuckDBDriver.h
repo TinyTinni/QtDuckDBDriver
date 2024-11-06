@@ -23,7 +23,7 @@ class QSqlResult;
 class QDuckDBDriverPrivate;
 
 class Q_EXPORT_SQLDRIVER_DUCKDB QDuckDBDriver : public QSqlDriver {
-	Q_DECLARE_PRIVATE(QDuckDBDriver);
+	Q_DECLARE_PRIVATE(QDuckDBDriver)
 	friend class QDuckDBResultPrivate;
 
 public:

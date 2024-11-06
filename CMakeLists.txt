@@ -8,6 +8,7 @@ project ("QtDuckDBDriver" VERSION 0.2.1)
 
 option(QTDUCKDB_BUILD_EXAMPLES OFF)
 option(QTDUCKDB_BUILD_TESTS ON)
+option(QTDUCKDB_WARNING_AS_ERRORS OFF)
 
 include(cmake/DetectQtVersion.cmake)
 include(cmake/QtDuckDBProperties.cmake)

@@ -28,14 +28,12 @@ set_property(TARGET QtDuckDBDriver PROPERTY COMPILE_WARNING_AS_ERROR ${QTDUCKDB_
 
 # disables sign conversion for qt5 as qt6 is the future and they fixed a lot of data types there
 if (NOT "${QT_VERSION}" STREQUAL "5")
-    message("Enable extra warnings")
     target_compile_options(QtDuckDBDriver PRIVATE
             $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
                 -Wall -Wextra -Wconversion -pedantic-errors -Wsign-conversion>
             $<$<CXX_COMPILER_ID:MSVC>:/W4>
         )
 endif()
-message("QTVERSION: ${QT_VERSION}")
 
 
 if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build

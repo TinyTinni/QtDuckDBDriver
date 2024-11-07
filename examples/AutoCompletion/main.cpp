@@ -47,6 +47,4 @@ int main(int argc, char *argv[]) {
 
 	lineEdit->show();
 	return app.exec();
-
-	return 0;
 }

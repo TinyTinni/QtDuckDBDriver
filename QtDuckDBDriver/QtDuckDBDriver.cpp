@@ -202,7 +202,7 @@ void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
 
 ///////////////////////
 
-bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsizetype idx, bool initialFetch) {
+bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, qsizetype in_idx, bool initialFetch) {
 	Q_Q(QDuckDBResult);
 
 	if (skipRow) {
@@ -210,7 +210,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsize
 		Q_ASSERT(!initialFetch);
 		skipRow = false;
 		for (qsizetype i = 0; i < firstRow.size(); i++)
-			values[i] = firstRow[i];
+			valuesCache[i] = firstRow[i];
 		return skippedStatus;
 	}
 	skipRow = initialFetch;
@@ -298,7 +298,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsize
 		if (rInf.isEmpty())
 			// must be first call.
 			initColumns(false);
-		if (idx < 0 && !initialFetch)
+		if (in_idx < 0 && !initialFetch)
 			return true;
 		const qsizetype rowCount = rInf.count();
 		for (qsizetype i = 0; i < rowCount; ++i) {
@@ -308,7 +308,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsize
 			case duckdb::LogicalTypeId::BLOB: {
 				val = val.CastAs(*stmt->context, duckdb::LogicalType::BLOB);
 				const auto &str = duckdb::StringValue::Get(val);
-				values[i + idx] = QByteArray(str.data(), static_cast<qsizetype>(str.size()));
+				valuesCache[i + in_idx] = QByteArray(str.data(), static_cast<qsizetype>(str.size()));
 				break;
 			}
 			case duckdb::LogicalTypeId::BOOLEAN:
@@ -317,7 +317,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsize
 			case duckdb::LogicalTypeId::INTEGER:
 			case duckdb::LogicalTypeId::BIGINT:
 				val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
-				values[i + idx] = duckdb::IntegerValue::Get(val);
+				valuesCache[i + in_idx] = duckdb::IntegerValue::Get(val);
 				break;
 			case duckdb::LogicalTypeId::FLOAT:
 			case duckdb::LogicalTypeId::DOUBLE:
@@ -325,25 +325,25 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &values, qsize
 				switch (q->numericalPrecisionPolicy()) {
 				case QSql::LowPrecisionInt32:
 					val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
-					values[i + idx] = duckdb::IntegerValue::Get(val);
+					valuesCache[i + in_idx] = duckdb::IntegerValue::Get(val);
 					break;
 				case QSql::LowPrecisionInt64:
 					val = val.CastAs(*stmt->context, duckdb::LogicalType::BIGINT);
-					values[i + idx] = QVariant((qint64)duckdb::BigIntValue::Get(val));
+					valuesCache[i + in_idx] = QVariant((qint64)duckdb::BigIntValue::Get(val));
 					break;
 				case QSql::LowPrecisionDouble:
 				case QSql::HighPrecision:
 				default:
 					val = val.CastAs(*stmt->context, duckdb::LogicalType::DOUBLE);
-					values[i + idx] = duckdb::DoubleValue::Get(val);
+					valuesCache[i + in_idx] = duckdb::DoubleValue::Get(val);
 					break;
 				};
 				break;
 			default:
 				if (!val.IsNull() && val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
-					values[i + idx] = QString::fromStdString(duckdb::StringValue::Get(val));
+					valuesCache[i + in_idx] = QString::fromStdString(duckdb::StringValue::Get(val));
 				} else {
-					values[i + idx] = QVariant::fromValue(QString());
+					valuesCache[i + in_idx] = QVariant::fromValue(QString());
 				}
 				break;
 			}
@@ -530,7 +530,7 @@ bool QDuckDBResult::exec() {
 		return false;
 	}
 
-	assert(paramCount <= std::numeric_limits<qsizetype>::max());
+	assert(paramCount <= static_cast<size_t>(std::numeric_limits<qsizetype>::max()));
 	for (size_t i = 0; i < paramCount; ++i) {
 		const QVariant &value = values.at(static_cast<qsizetype>(i));
 		if (value.isNull()) {

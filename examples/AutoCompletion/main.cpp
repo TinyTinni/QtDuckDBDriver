@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	auto model = new QStringListModel();
 	completer->setModel(model);
 
-	QObject::connect(lineEdit, &QLineEdit::textChanged, completer, [completer, db, model](QString text) {
+	QObject::connect(lineEdit, &QLineEdit::textChanged, completer, [db, model](QString text) {
 		QString prevText;
 		if (QStringList prev = text.split(' '); prev.size() > 1) {
 			prev.removeLast();

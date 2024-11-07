@@ -62,11 +62,11 @@ jobs:
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
         -DQTDUCKDB_BUILD_EXAMPLES=ON 
         -DQTDUCKDB_BUILD_TESTS=ON 
+        -DQTDUCKDB_WARNING_AS_ERRORS=ON
         -DBUILD_UNITTESTS=OFF 
         -DBUILD=TESTING=OFF 
         -DBUILD_SHELL=OFF
         -DBUILD_EXTENSIONS="autocomplete"
-        -DCOMPILE_WARNING_AS_ERROR=ON
 
     - name: Build Tests
       run: cmake 

@@ -118,11 +118,11 @@ private slots:
 		                *m_db);
 		checkError(query);
 
-		auto features = m_db->driver()->hasFeature(QSqlDriver::NamedPlaceholders);
+		QVERIFY(!m_db->driver()->hasFeature(QSqlDriver::NamedPlaceholders));
 
 		QSqlQuery prepared_query;
-		bool prepared = prepared_query.prepare(
-		    R"(INSERT INTO weather (city, temp_lo, temp_hi, prcp, date) VALUES (:city, :temp_lo, :temp_hi, :prcp, :date))");
+		QVERIFY(prepared_query.prepare(
+		    R"(INSERT INTO weather (city, temp_lo, temp_hi, prcp, date) VALUES (:city, :temp_lo, :temp_hi, :prcp, :date))"));
 		prepared_query.bindValue(":city", "San Francisco");
 		prepared_query.bindValue(":temp_lo", 46);
 		prepared_query.bindValue(":temp_hi", 50);

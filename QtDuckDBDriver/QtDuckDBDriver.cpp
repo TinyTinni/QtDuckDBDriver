@@ -195,7 +195,6 @@ void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
 		auto fieldType = duckdbTypeToQtType(columnTypesVec[i]);
 
 		QSqlField fld(colName, toQtType(fieldType));
-		fld.setSqlType(fieldType);
 		rInf.append(fld);
 	}
 }

@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "qt-6.7.1" ]
   pull_request:
     branches: [ "main" ]
 
@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
           os: ["windows-latest", "ubuntu-latest", "macos-latest"]
-          qt_version: ["5.15.2", "6.8.0"]
+          qt_version: ["5.15.2", "6.7.1"]
           exclude:
             - os: "macos-latest"
               qt_version: "5.15.2" # only available for x86, macos compiles on arm

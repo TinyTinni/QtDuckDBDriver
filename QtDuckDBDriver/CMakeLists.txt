@@ -9,7 +9,7 @@ target_include_directories(QtSqlPrivate INTERFACE "${Qt${QT_VERSION}Sql_PRIVATE_
 set_property(TARGET QtSqlPrivate PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Qt${QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
 
 include(../cmake/get_cpm.cmake)
-CPMAddPackage("gh:duckdb/duckdb#v1.1.3")
+CPMAddPackage("gh:duckdb/duckdb#v${QTDUCKDB_DUCKDB_VERSION}")
 
 get_property(duckdb_include_dirs TARGET duckdb_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 set_property(TARGET duckdb_static PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${duckdb_include_dirs}")

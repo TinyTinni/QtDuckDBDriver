@@ -56,6 +56,8 @@ Full example can be found in the [example directory](./examples/TableWidget/## )
 
 DuckDB will be linked statically.  
 
+You can set a specific DuckDB Version with the CMake varialbe `QTDUCKDB_DUCKDB_VERSION`. For Example `QTDUCKDB_DUCKDB_VERSION="1.1.3"` for building this plugin with DuckDB v1.1.3.
+
 
 For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
 *tl;dr*: don't use the plugin on Qt version below the version it was build for.

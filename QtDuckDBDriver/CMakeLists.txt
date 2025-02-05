@@ -2,11 +2,11 @@
 # project specific logic here.
 #
 
-find_package(Qt${QT_VERSION} REQUIRED COMPONENTS Sql)
+find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Sql)
 
 add_library(QtSqlPrivate INTERFACE)
-target_include_directories(QtSqlPrivate INTERFACE "${Qt${QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
-set_property(TARGET QtSqlPrivate PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Qt${QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
+target_include_directories(QtSqlPrivate INTERFACE "${Qt${QTDUCKDB_QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
+set_property(TARGET QtSqlPrivate PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Qt${QTDUCKDB_QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
 
 include(../cmake/get_cpm.cmake)
 CPMAddPackage("gh:duckdb/duckdb#v${QTDUCKDB_DUCKDB_VERSION}")
@@ -27,7 +27,7 @@ set_property(TARGET QtDuckDBDriver PROPERTY INTERPROCEDURAL_OPTIMIZATION_DEBUG F
 set_property(TARGET QtDuckDBDriver PROPERTY COMPILE_WARNING_AS_ERROR ${QTDUCKDB_WARNING_AS_ERRORS})
 
 # disables sign conversion for qt5 as qt6 is the future and they fixed a lot of data types there
-if (NOT "${QT_VERSION}" STREQUAL "5")
+if (NOT "${QTDUCKDB_QT_VERSION}" STREQUAL "5")
     target_compile_options(QtDuckDBDriver PRIVATE
             $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
                 -Wall -Wextra -Wconversion -pedantic-errors -Wsign-conversion>

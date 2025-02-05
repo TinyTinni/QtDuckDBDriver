@@ -1,7 +1,7 @@
 #pragma once
 #include <QMetaObject>
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QTDUCKDB_QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 
 #include <QLatin1String>
 

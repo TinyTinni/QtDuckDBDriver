@@ -9,7 +9,7 @@ project ("QtDuckDBDriver" VERSION 0.2.1)
 option(QTDUCKDB_BUILD_EXAMPLES OFF)
 option(QTDUCKDB_BUILD_TESTS ON)
 option(QTDUCKDB_WARNING_AS_ERRORS OFF)
-set(QTDUCKDB_DUCKDB_VERSION "1.1.3" CACHE STRING "Version of DuckDB which should be included")
+set(QTDUCKDB_DUCKDB_VERSION "1.2.0" CACHE STRING "Version of DuckDB which should be included")
 
 include(cmake/DetectQtVersion.cmake)
 include(cmake/QtDuckDBProperties.cmake)

@@ -56,11 +56,13 @@ Full example can be found in the [example directory](./examples/TableWidget/## )
 
 DuckDB will be linked statically.  
 
+CMake options:
+- `QTDUCKDB_DUCKDB_VERSION` specify the DuckDB version you want to build and link e.g. "1.1.3". It will be automatically downloaded
+- `QTDUCKDB_QT_VERSION` specify the version you want to use. Default: tries to autodetect which is installed. Prefers 6 over 5
+
 
 For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
 *tl;dr*: don't use the plugin on Qt version below the version it was build for.
-
-You can manually select the Qt Version with the cmake variable `QT_VERSION`== 5 or == 6. Otherwise, the auto detection will select the highest version.
 
 
 ## Prebuild MSVC DLL in the artifacts

@@ -12,5 +12,5 @@ if(NOT Qt6_FOUND)
     endif()
 endif()
 
-set(QT_VERSION ${_QT_VERSION} CACHE STRING "Qt Version")
-message(STATUS "Using Qt${QT_VERSION}")
+set(QTDUCKDB_QT_VERSION ${_QT_VERSION} CACHE STRING "Qt Version")
+message(STATUS "Using Qt${QTDUCKDB_QT_VERSION}")

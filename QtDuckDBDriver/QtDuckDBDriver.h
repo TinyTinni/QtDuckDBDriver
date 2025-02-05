@@ -19,7 +19,6 @@ struct DuckDBConnectionHandle {
 #define Q_EXPORT_SQLDRIVER_DUCKDB Q_SQL_EXPORT
 #endif
 
-class QSqlResult;
 class QDuckDBDriverPrivate;
 
 class Q_EXPORT_SQLDRIVER_DUCKDB QDuckDBDriver : public QSqlDriver {

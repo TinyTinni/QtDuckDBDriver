@@ -1,9 +1,9 @@
 function(add_qtduckdb_properties TARGET)
     find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Test Sql Widgets)
-    target_link_libraries(${TARGET} PRIVATE Qt::Sql QtDuckDBDriver)
+    target_link_libraries(${TARGET} PRIVATE Qt::Sql)
     set_property(TARGET ${TARGET} PROPERTY AUTOMOC ON)
     set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 17)
-    set_property(TARGET QtDuckDBDriver PROPERTY COMPILE_WARNING_AS_ERROR ${QTDUCKDB_WARNING_AS_ERRORS})
+    set_property(TARGET ${TARGET} PROPERTY COMPILE_WARNING_AS_ERROR ${QTDUCKDB_WARNING_AS_ERRORS})
 
     # disables sign conversion for qt5 as qt6 is the future and they fixed a lot of data types there
     if (NOT "${QTDUCKDB_QT_VERSION}" STREQUAL "5")

@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
           os: ["windows-latest", "ubuntu-latest", "macos-latest"]
-          qt_version: ["5.15.2", "6.8.0"]
+          qt_version: ["5.15.2", "6.9.0"]
           exclude:
             - os: "macos-latest"
               qt_version: "5.15.2" # only available for x86, macos compiles on arm

@@ -1,12 +1,19 @@
-﻿# CMakeList.txt : CMake project for QtDuckDBDriver, include source and define
-# project specific logic here.
-#
+﻿
+if (${QTDUCKDB_QT_VERSION} STREQUAL "5")
 
 find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Sql)
 
 add_library(QtSqlPrivate INTERFACE)
 target_include_directories(QtSqlPrivate INTERFACE "${Qt${QTDUCKDB_QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
 set_property(TARGET QtSqlPrivate PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Qt${QTDUCKDB_QT_VERSION}Sql_PRIVATE_INCLUDE_DIRS}")
+set(QTPrivateSql QtSqlPrivate)
+
+else()
+
+find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Sql SqlPrivate)
+set(QTPrivateSql Qt::SqlPrivate)
+
+endif()
 
 include(../cmake/get_cpm.cmake)
 CPMAddPackage("gh:duckdb/duckdb#v${QTDUCKDB_DUCKDB_VERSION}")
@@ -18,7 +25,7 @@ add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
-target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static QtSqlPrivate)
+target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
 set_property(TARGET QtDuckDBDriver PROPERTY AUTOMOC ON)
 set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")

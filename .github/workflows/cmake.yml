@@ -67,6 +67,8 @@ jobs:
         -DBUILD=TESTING=OFF 
         -DBUILD_SHELL=OFF
         -DBUILD_EXTENSIONS="autocomplete"
+        -DENABLE_EXTENSION_AUTOINSTALL=ON
+        -DENABLE_EXTENSION_AUTOLOADING=ON
 
     - name: Build Tests
       run: cmake 

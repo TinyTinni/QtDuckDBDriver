@@ -18,14 +18,15 @@ endif()
 include(../cmake/get_cpm.cmake)
 CPMAddPackage("gh:duckdb/duckdb#v${QTDUCKDB_DUCKDB_VERSION}")
 
-get_property(duckdb_include_dirs TARGET duckdb_static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-set_property(TARGET duckdb_static PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${duckdb_include_dirs}")
-
 add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 
+#duckdb_static will not link the header file (neither .h nor .hpp). We have to add them manually
+target_include_directories(QtDuckDBDriver SYSTEM PUBLIC "${duckdb_SOURCE_DIR}/src/include")
+
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
-target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static ${QTPrivateSql})
+target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static dummy_static_extension_loader)
+target_link_libraries(QtDuckDBDriver PRIVATE ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
 set_property(TARGET QtDuckDBDriver PROPERTY AUTOMOC ON)
 set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")

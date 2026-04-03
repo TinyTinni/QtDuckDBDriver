@@ -25,6 +25,7 @@ target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "
 target_include_directories(QtDuckDBDriver SYSTEM PUBLIC "${duckdb_SOURCE_DIR}/src/include")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
+set_property(TARGET QtDuckDBDriver PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # mimic the runtime linkage of duckdb
 target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static dummy_static_extension_loader)
 target_link_libraries(QtDuckDBDriver PRIVATE ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)

@@ -55,8 +55,8 @@ private slots:
 		while (query.next()) {
 			QCOMPARE(query.size(), 4);
 			QCOMPARE(query.value(0).toInt(), 46);
-			QCOMPARE(query.value(1).toInt(), 50);
-			QCOMPARE(query.value(2).toString(), "0.25");
+			QCOMPARE(query.value(1).toString(), "50");
+			QCOMPARE(query.value(2).toDouble(), 0.25);
 			QCOMPARE(query.value(3).toDate(), QDate(1994, 11, 27));
 		}
 
@@ -92,7 +92,7 @@ private slots:
 		prepared_query.bindValue(0, "San Francisco2");
 		prepared_query.bindValue(1, 80);
 		prepared_query.bindValue(2, 90);
-		prepared_query.bindValue(3, 0.5);
+		prepared_query.bindValue(3, 0.25);
 		prepared_query.bindValue(4, "2012-12-01");
 		prepared_query.exec();
 		checkError(prepared_query);
@@ -102,6 +102,13 @@ private slots:
 		while (query.next()) {
 			QCOMPARE(query.value(0).toInt(), 2);
 		}
+
+		query.exec(R"(SELECT prcp FROM weather)");
+		checkError(query);
+		while (query.next()) {
+			QCOMPARE(query.value(0), 0.25);
+		}
+
 		m_db->close();
 	}
 

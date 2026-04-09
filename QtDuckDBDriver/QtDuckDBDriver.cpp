@@ -541,16 +541,17 @@ bool QDuckDBResult::exec() {
 				d->stmt->bound_values[i] = duckdb::Value::BLOB(ba->toStdString());
 				break;
 			}
-			case QMetaType::Int:
 			case QMetaType::Bool:
-				d->stmt->bound_values[i] = duckdb::Value::INTEGER(value.toInt());
+			case QMetaType::Int:
+			case QMetaType::LongLong:
+				d->stmt->bound_values[i] = duckdb::Value::BIGINT(value.toLongLong());
 				break;
 			case QMetaType::Double:
-				d->stmt->bound_values[i] = duckdb::Value::DOUBLE(value.toInt());
+				d->stmt->bound_values[i] = duckdb::Value::DOUBLE(value.toDouble());
 				break;
 			case QMetaType::UInt:
-			case QMetaType::LongLong:
-				d->stmt->bound_values[i] = duckdb::Value::BIGINT(value.toInt());
+			case QMetaType::ULongLong:
+				d->stmt->bound_values[i] = duckdb::Value::UBIGINT(value.toULongLong());
 				break;
 			case QMetaType::QDateTime: {
 				const QDateTime dateTime = value.toDateTime();

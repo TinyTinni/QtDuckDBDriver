@@ -151,8 +151,10 @@ QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
 		return QMetaType::Short;
 	case duckdb::LogicalTypeId::INTEGER:
 		return QMetaType::Int;
+	case duckdb::LogicalTypeId::UBIGINT:
+		return QMetaType::ULongLong;
 	case duckdb::LogicalTypeId::BIGINT:
-		return QMetaType::Long;
+		return QMetaType::LongLong;
 	case duckdb::LogicalTypeId::FLOAT:
 		return QMetaType::Float;
 	case duckdb::LogicalTypeId::DOUBLE:
@@ -315,8 +317,15 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 			case duckdb::LogicalTypeId::SMALLINT:
 			case duckdb::LogicalTypeId::INTEGER:
 			case duckdb::LogicalTypeId::BIGINT:
-				val = val.CastAs(*stmt->context, duckdb::LogicalType::INTEGER);
-				valuesCache[i + in_idx] = duckdb::IntegerValue::Get(val);
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::BIGINT);
+				valuesCache[i + in_idx] = qint64 {duckdb::BigIntValue::Get(val)};
+				break;
+			case duckdb::LogicalTypeId::UTINYINT:
+			case duckdb::LogicalTypeId::USMALLINT:
+			case duckdb::LogicalTypeId::UINTEGER:
+			case duckdb::LogicalTypeId::UBIGINT:
+				val = val.CastAs(*stmt->context, duckdb::LogicalType::UBIGINT);
+				valuesCache[i + in_idx] = quint64 {duckdb::UBigIntValue::Get(val)};
 				break;
 			case duckdb::LogicalTypeId::FLOAT:
 			case duckdb::LogicalTypeId::DOUBLE:

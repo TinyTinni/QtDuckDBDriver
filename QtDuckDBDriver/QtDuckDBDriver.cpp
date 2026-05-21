@@ -433,45 +433,8 @@ bool QDuckDBResult::prepare(const QString &query) {
 		return false;
 	}
 	try {
-		duckdb::Parser parser(db->con->context->GetParserOptions());
-		parser.ParseQuery(query_str);
-		if (parser.statements.size() == 0) {
-			return true;
-		}
-		// extract the remainder
-		idx_t next_location = parser.statements[0]->stmt_location + parser.statements[0]->stmt_length;
-		// extract the remainder of the query
-		if (next_location < query_str.size() && !QString(query_str.data() + next_location + 1).trimmed().isEmpty()) {
-			setLastError(QSqlError(
-			    QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
-			    QCoreApplication::translate("QDuckDbResult", "Unable to execute multiple statements at a time")));
-			d->finalize();
-			return false;
-		}
-
-		// extract the first statement
-		duckdb::vector<duckdb::unique_ptr<duckdb::SQLStatement>> statements;
-		statements.push_back(std::move(parser.statements[0]));
-
-		db->con->context->HandlePragmaStatements(statements);
-		if (statements.empty()) {
-			return true;
-		}
-
-		// if there are multiple statements here, we are dealing with an import database statement
-		// we directly execute all statements besides the final one
-		for (idx_t i = 0; i + 1 < statements.size(); i++) {
-			auto res = db->con->Query(std::move(statements[i]));
-			if (res->HasError()) {
-				build_error(res->GetErrorObject());
-				return false;
-			}
-		}
-
-		// now prepare the query
-		auto prepared = db->con->Prepare(std::move(statements.back()));
+		auto prepared = db->con->Prepare(query.toStdString());
 		if (prepared->HasError()) {
-			// failed to prepare: set the error message
 			build_error(prepared->error);
 			return false;
 		}

@@ -4,6 +4,8 @@ add_qtduckdb_properties(driver_tests)
 target_link_libraries(driver_tests PRIVATE Qt::Test)
 
 
+duckdb_extension_load(autocomplete)
+
 # for duckdb internal access
 if (WIN32)
     target_link_libraries(driver_tests PRIVATE QtDuckDBDriver)

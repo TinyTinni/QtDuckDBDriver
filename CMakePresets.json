@@ -1,0 +1,102 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "CMAKE_C_COMPILER_LAUNCHER": "$env{CMAKE_C_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$env{CMAKE_CXX_COMPILER_LAUNCHER}",
+        "BUILD_UNITTESTS": "OFF",
+        "BUILD_SHELL": "OFF"
+      }
+    },
+    {
+      "name": "dev-debug",
+      "inherits": "base",
+      "displayName": "Development Debug",
+      "description": "Debug build with tests enabled for local iteration.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "QTDUCKDB_BUILD_EXAMPLES": "ON",
+        "QTDUCKDB_BUILD_TESTS": "ON",
+        "QTDUCKDB_WARNING_AS_ERRORS": "OFF"
+      }
+    },
+    {
+      "name": "ci-test",
+      "inherits": "base",
+      "displayName": "CI Test",
+      "description": "Release build used by CI for the test matrix.",
+      "cacheVariables": {
+        "QTDUCKDB_BUILD_EXAMPLES": "ON",
+        "QTDUCKDB_BUILD_TESTS": "ON",
+        "QTDUCKDB_WARNING_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "ci-package",
+      "inherits": "base",
+      "displayName": "CI Package",
+      "description": "Release build used by CI to create publishable packages.",
+      "cacheVariables": {
+        "QTDUCKDB_BUILD_EXAMPLES": "OFF",
+        "QTDUCKDB_BUILD_TESTS": "OFF",
+        "QTDUCKDB_WARNING_AS_ERRORS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-debug",
+      "configurePreset": "dev-debug"
+    },
+    {
+      "name": "ci-test-build",
+      "configurePreset": "ci-test"
+    },
+    {
+      "name": "ci-package-build",
+      "configurePreset": "ci-package"
+    },
+    {
+      "name": "ci-package-install",
+      "configurePreset": "ci-package",
+      "targets": [
+        "install"
+      ]
+    },
+    {
+      "name": "ci-package-bundle",
+      "configurePreset": "ci-package",
+      "targets": [
+        "bundle"
+      ]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-debug",
+      "configurePreset": "dev-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-test",
+      "configurePreset": "ci-test",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

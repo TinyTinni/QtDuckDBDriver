@@ -240,9 +240,10 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 	}
 
 	auto buildError = [this, q](duckdb::ErrorData &errData) {
-		stmt->result = nullptr;
-		stmt->current_chunk = nullptr;
-		q->setLastError(qMakeError(errData, "Unable to fetch row.", QSqlError::ConnectionError));
+		auto sqlError = qMakeError(errData, "Unable to fetch row.", QSqlError::ConnectionError);
+		stmt->result.reset();
+		stmt->current_chunk.reset();
+		q->setLastError(sqlError);
 		q->setAt(QSql::AfterLastRow);
 	};
 

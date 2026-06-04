@@ -3,13 +3,10 @@ add_test(NAME driver_tests COMMAND driver_tests)
 add_qtduckdb_properties(driver_tests)
 target_link_libraries(driver_tests PRIVATE Qt::Test)
 
-
-duckdb_extension_load(autocomplete)
-
 # for duckdb internal access
 if (WIN32)
     target_link_libraries(driver_tests PRIVATE QtDuckDBDriver)
 else()
-    target_link_libraries(driver_tests PRIVATE duckdb_static dummy_static_extension_loader)
+    target_link_libraries(driver_tests PRIVATE duckdb_static ${QTDUCKDB_EXTENSION_LINK_TARGETS})
     target_include_directories(driver_tests SYSTEM PRIVATE $<TARGET_PROPERTY:QtDuckDBDriver,INCLUDE_DIRECTORIES>)
 endif()

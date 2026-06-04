@@ -59,6 +59,7 @@ DuckDB will be linked statically.
 CMake options:
 - `QTDUCKDB_DUCKDB_VERSION` specify the DuckDB version you want to build and link e.g. "1.1.3". It will be automatically downloaded
 - `QTDUCKDB_QT_VERSION` specify the version you want to use. Default: tries to autodetect which is installed. Prefers 6 over 5
+- `QTDUCKDB_DUCKDB_EXTENSIONS` specify additional DuckDB extensions that should be built into the bundled DuckDB. Default: `autocomplete`
 
 
 For pre-build dlls, please choose the right version (See [Qt Doc about plugin version](https://doc.qt.io/qt-6/deployment-plugins.html#loading-and-verifying-plugins-dynamically))  
@@ -76,4 +77,3 @@ The artifact might be expired, but you can just fork this project and start the 
 
 Based on [Qt's](https://www.qt.io/) sqlite driver code, which is licensed under the LGPL v3.  
 Based on [DuckDB](https://duckdb.org/) under the MIT license.  
-

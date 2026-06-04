@@ -22,6 +22,10 @@ function(add_qtduckdb_properties TARGET)
     endif()
 
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory 
+                "$<TARGET_FILE_DIR:${TARGET}>/sqldrivers/")
+    add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:QtDuckDBDriver> "$<TARGET_FILE_DIR:${TARGET}>/sqldrivers/")
+    add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory 
                 "$<TARGET_FILE_DIR:${TARGET}>/plugins/sqldrivers/")
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_FILE:QtDuckDBDriver> "$<TARGET_FILE_DIR:${TARGET}>/plugins/sqldrivers/")

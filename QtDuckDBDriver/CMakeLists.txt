@@ -45,6 +45,17 @@ endforeach()
 list(REMOVE_DUPLICATES QTDUCKDB_EXTENSION_LINK_TARGETS)
 set(QTDUCKDB_EXTENSION_LINK_TARGETS "${QTDUCKDB_EXTENSION_LINK_TARGETS}" CACHE INTERNAL "DuckDB extension link targets for QtDuckDBDriver")
 
+# DuckDB's bundled fmt library instantiates std::char_traits with a non-standard
+# type, triggering -Wdeprecated-declarations on macOS (Apple libc++). Suppress
+# this only on DuckDB's own extension targets where it originates.
+if(APPLE)
+    foreach(_ext_target ${QTDUCKDB_EXTENSION_LINK_TARGETS})
+        if(TARGET ${_ext_target})
+            target_compile_options(${_ext_target} PRIVATE -Wno-deprecated-declarations)
+        endif()
+    endforeach()
+endif()
+
 add_library (QtDuckDBDriver SHARED "QtDuckDBDriver.cpp"  "smain.cpp")
 target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "QtDuckDBDriver.h")
 
@@ -52,7 +63,6 @@ target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "
 target_include_directories(QtDuckDBDriver SYSTEM PUBLIC "${duckdb_SOURCE_DIR}/src/include")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
-set_property(TARGET QtDuckDBDriver PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # mimic the runtime linkage of duckdb
 target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static ${QTDUCKDB_EXTENSION_LINK_TARGETS})
 target_link_libraries(QtDuckDBDriver PRIVATE ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
@@ -71,6 +81,10 @@ if (NOT "${QTDUCKDB_QT_VERSION}" STREQUAL "5")
             $<$<CXX_COMPILER_ID:MSVC>:/W4>
         )
 endif()
+
+target_compile_options(QtDuckDBDriver PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
+    )
 
 
 if (NOT WIN32) # seems like duckdb disabled sanitizer on windows build

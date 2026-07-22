@@ -80,7 +80,7 @@ jobs:
       run: cmake --build --preset ci-test-build
 
     - name: Test
-      run: ctest --preset ci-test
+      run: ctest --preset ci-test -j
 
     - name: ccache stats
       run: ccache -s

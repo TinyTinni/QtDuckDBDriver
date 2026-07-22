@@ -52,18 +52,79 @@ static QString _q_escapeIdentifier(const QString &identifier, QSqlDriver::Identi
 	return res;
 }
 
-static QMetaType::Type qGetColumnType(const QString &tpName) {
+static QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
+	switch (type.id()) {
+	case duckdb::LogicalTypeId::BOOLEAN:
+		return QMetaType::Bool;
+	case duckdb::LogicalTypeId::TINYINT:
+		return QMetaType::Short;
+	case duckdb::LogicalTypeId::SMALLINT:
+		return QMetaType::Short;
+	case duckdb::LogicalTypeId::INTEGER:
+		return QMetaType::Int;
+	case duckdb::LogicalTypeId::UBIGINT:
+		return QMetaType::ULongLong;
+	case duckdb::LogicalTypeId::BIGINT:
+		return QMetaType::LongLong;
+	case duckdb::LogicalTypeId::FLOAT:
+		return QMetaType::Float;
+	case duckdb::LogicalTypeId::DOUBLE:
+		return QMetaType::Double;
+	case duckdb::LogicalTypeId::BLOB:
+		return QMetaType::QByteArray;
+	case duckdb::LogicalTypeId::DATE:
+		return QMetaType::QDate;
+	case duckdb::LogicalTypeId::TIME:
+		return QMetaType::QTime;
+	case duckdb::LogicalTypeId::TIMESTAMP:
+	case duckdb::LogicalTypeId::TIMESTAMP_NS:
+	case duckdb::LogicalTypeId::TIMESTAMP_MS:
+	case duckdb::LogicalTypeId::TIMESTAMP_SEC:
+		return QMetaType::QDateTime;
+	case duckdb::LogicalTypeId::DECIMAL:
+		return QMetaType::Double;
+	case duckdb::LogicalTypeId::VARCHAR:
+	case duckdb::LogicalTypeId::LIST:
+	case duckdb::LogicalTypeId::MAP:
+	case duckdb::LogicalTypeId::STRUCT:
+	default:
+		return QMetaType::QString;
+	}
+}
+
+static duckdb::LogicalTypeId duckdbTypeIdFromName(const QString &tpName) {
 	const QString typeName = tpName.toLower();
 
-	if (typeName == "integer"_L1 || typeName == "int"_L1)
-		return QMetaType::Int;
-	if (typeName == "double"_L1 || typeName == "float"_L1 || typeName == "real"_L1 || typeName.startsWith("numeric"_L1))
-		return QMetaType::Double;
+	if (typeName == "tinyint"_L1)
+		return duckdb::LogicalTypeId::TINYINT;
+	if (typeName == "smallint"_L1 || typeName == "int2"_L1)
+		return duckdb::LogicalTypeId::SMALLINT;
+	if (typeName == "integer"_L1 || typeName == "int"_L1 || typeName == "int4"_L1)
+		return duckdb::LogicalTypeId::INTEGER;
+	if (typeName == "bigint"_L1 || typeName == "int8"_L1)
+		return duckdb::LogicalTypeId::BIGINT;
+	if (typeName == "ubigint"_L1)
+		return duckdb::LogicalTypeId::UBIGINT;
+	if (typeName == "float"_L1 || typeName == "real"_L1 || typeName == "float4"_L1)
+		return duckdb::LogicalTypeId::FLOAT;
+	if (typeName == "double"_L1 || typeName == "float8"_L1 || typeName.startsWith("numeric"_L1) ||
+	    typeName.startsWith("decimal"_L1))
+		return duckdb::LogicalTypeId::DOUBLE;
 	if (typeName == "blob"_L1)
-		return QMetaType::QByteArray;
+		return duckdb::LogicalTypeId::BLOB;
 	if (typeName == "boolean"_L1 || typeName == "bool"_L1)
-		return QMetaType::Bool;
-	return QMetaType::QString;
+		return duckdb::LogicalTypeId::BOOLEAN;
+	if (typeName == "date"_L1)
+		return duckdb::LogicalTypeId::DATE;
+	if (typeName == "time"_L1)
+		return duckdb::LogicalTypeId::TIME;
+	if (typeName == "timestamp"_L1)
+		return duckdb::LogicalTypeId::TIMESTAMP;
+	return duckdb::LogicalTypeId::VARCHAR;
+}
+
+static QMetaType::Type qGetColumnType(const QString &tpName) {
+	return duckdbTypeToQtType(duckdb::LogicalType(duckdbTypeIdFromName(tpName)));
 }
 
 static QSqlError qMakeError(duckdb::ErrorData &errData, const QString &descr, QSqlError::ErrorType type) {
@@ -139,42 +200,6 @@ void QDuckDBResultPrivate::finalize() {
 		return;
 
 	stmt.reset();
-}
-
-QMetaType::Type duckdbTypeToQtType(const duckdb::LogicalType &type) {
-	switch (type.id()) {
-	case duckdb::LogicalTypeId::BOOLEAN:
-		return QMetaType::Bool;
-	case duckdb::LogicalTypeId::TINYINT:
-		return QMetaType::Short;
-	case duckdb::LogicalTypeId::SMALLINT:
-		return QMetaType::Short;
-	case duckdb::LogicalTypeId::INTEGER:
-		return QMetaType::Int;
-	case duckdb::LogicalTypeId::UBIGINT:
-		return QMetaType::ULongLong;
-	case duckdb::LogicalTypeId::BIGINT:
-		return QMetaType::LongLong;
-	case duckdb::LogicalTypeId::FLOAT:
-		return QMetaType::Float;
-	case duckdb::LogicalTypeId::DOUBLE:
-		return QMetaType::Double;
-	case duckdb::LogicalTypeId::BLOB:
-		return QMetaType::QByteArray;
-	case duckdb::LogicalTypeId::DECIMAL:
-	case duckdb::LogicalTypeId::DATE:
-	case duckdb::LogicalTypeId::TIME:
-	case duckdb::LogicalTypeId::TIMESTAMP:
-	case duckdb::LogicalTypeId::TIMESTAMP_NS:
-	case duckdb::LogicalTypeId::TIMESTAMP_MS:
-	case duckdb::LogicalTypeId::TIMESTAMP_SEC:
-	case duckdb::LogicalTypeId::VARCHAR:
-	case duckdb::LogicalTypeId::LIST:
-	case duckdb::LogicalTypeId::MAP:
-	case duckdb::LogicalTypeId::STRUCT:
-	default:
-		return QMetaType::QString;
-	}
 }
 
 void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
@@ -306,6 +331,10 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 		for (qsizetype i = 0; i < rowCount; ++i) {
 
 			duckdb::Value val = stmt->current_chunk->data[static_cast<size_t>(i)].GetValue(*stmt->current_row);
+			if (val.IsNull()) {
+				valuesCache[i + in_idx] = QVariant();
+				continue;
+			}
 			switch (val.type().id()) {
 			case duckdb::LogicalTypeId::BLOB: {
 				val = val.CastAs(*stmt->context, duckdb::LogicalType::BLOB);
@@ -349,7 +378,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 				};
 				break;
 			default:
-				if (!val.IsNull() && val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
+				if (val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
 					valuesCache[i + in_idx] = QString::fromStdString(duckdb::StringValue::Get(val));
 				} else {
 					valuesCache[i + in_idx] = QVariant::fromValue(QString());
@@ -511,24 +540,40 @@ bool QDuckDBResult::exec() {
 			switch (value.userType()) {
 			case QMetaType::QByteArray: {
 				const QByteArray *ba = static_cast<const QByteArray *>(value.constData());
-				d->stmt->bound_values[i] = duckdb::Value::BLOB(ba->toStdString());
+				d->stmt->bound_values[i] = duckdb::Value::BLOB_RAW(ba->toStdString());
 				break;
 			}
 			case QMetaType::Bool:
+			case QMetaType::Char:
+			case QMetaType::SChar:
+			case QMetaType::Short:
 			case QMetaType::Int:
+			case QMetaType::Long:
 			case QMetaType::LongLong:
 				d->stmt->bound_values[i] = duckdb::Value::BIGINT(value.toLongLong());
 				break;
 			case QMetaType::Double:
 				d->stmt->bound_values[i] = duckdb::Value::DOUBLE(value.toDouble());
 				break;
+			case QMetaType::Float:
+				d->stmt->bound_values[i] = duckdb::Value::DOUBLE(static_cast<double>(value.toFloat()));
+				break;
+			case QMetaType::UChar:
+			case QMetaType::UShort:
 			case QMetaType::UInt:
+			case QMetaType::ULong:
 			case QMetaType::ULongLong:
 				d->stmt->bound_values[i] = duckdb::Value::UBIGINT(value.toULongLong());
 				break;
 			case QMetaType::QDateTime: {
 				const QDateTime dateTime = value.toDateTime();
 				const QString str = dateTime.toString(Qt::ISODateWithMs);
+				d->stmt->bound_values[i] = duckdb::Value(str.toStdString());
+				break;
+			}
+			case QMetaType::QDate: {
+				const QDate date = value.toDate();
+				const QString str = date.toString(Qt::ISODate);
 				d->stmt->bound_values[i] = duckdb::Value(str.toStdString());
 				break;
 			}
@@ -676,7 +721,7 @@ void QDuckDBDriver::close() {
 	Q_D(QDuckDBDriver);
 	if (isOpen()) {
 		for (QDuckDBResult *result : qtAsConst(d->results)) {
-			result->d_func()->finalize();
+			result->d_func()->cleanup();
 		}
 
 		d->access.reset();
@@ -739,19 +784,19 @@ QStringList QDuckDBDriver::tables(QSql::TableType type) const {
 	QSqlQuery q(createResult());
 	q.setForwardOnly(true);
 
-	QString system_tables = (type & QSql::SystemTables) ? "" : "WHERE internal = 'FALSE'";
+	const QString system_tables = (type & QSql::SystemTables) ? QString() : "WHERE internal = 'FALSE'"_L1;
 
 	if (type & QSql::Tables) {
-		QString table_sql = QString("SELECT table_name FROM duckdb_tables() %1;").arg(system_tables);
-		if (!table_sql.isEmpty() && q.exec(table_sql)) {
+		const QString table_sql = "SELECT table_name FROM duckdb_tables() "_L1 + system_tables + ";"_L1;
+		if (q.exec(table_sql)) {
 			while (q.next())
 				res.append(q.value(0).toString());
 		}
 	}
 
 	if (type & QSql::Views) {
-		QString view_sql = QString("SELECT view_name FROM duckdb_views() %1;").arg(system_tables);
-		if (!view_sql.isEmpty() && q.exec(view_sql)) {
+		const QString view_sql = "SELECT view_name FROM duckdb_views() "_L1 + system_tables + ";"_L1;
+		if (q.exec(view_sql)) {
 			while (q.next())
 				res.append(q.value(0).toString());
 		}

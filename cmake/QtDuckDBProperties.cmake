@@ -1,5 +1,5 @@
 function(add_qtduckdb_properties TARGET)
-    find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Test Sql Widgets)
+    find_package(Qt${QTDUCKDB_QT_VERSION} REQUIRED COMPONENTS Test Sql)
     target_link_libraries(${TARGET} PRIVATE Qt::Sql)
     add_dependencies(${TARGET} QtDuckDBDriver)
     set_property(TARGET ${TARGET} PROPERTY AUTOMOC ON)
@@ -14,6 +14,10 @@ function(add_qtduckdb_properties TARGET)
             $<$<CXX_COMPILER_ID:MSVC>:/W4>
         )
     endif()
+
+    target_compile_options(${TARGET} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
+    )
 
     if (WIN32)
         add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different

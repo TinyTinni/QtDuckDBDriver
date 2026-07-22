@@ -6,11 +6,11 @@
 #include <QLatin1String>
 
 // replaces "using namespace Qt::StringLiterals;"
-QLatin1String operator""_L1(const char *c, size_t s) {
+inline QLatin1String operator""_L1(const char *c, size_t s) {
 	return QLatin1String(c, static_cast<int>(s));
 }
 
-QVariant::Type toQtType(QMetaType::Type type) {
+inline QVariant::Type toQtType(QMetaType::Type type) {
 	return static_cast<QVariant::Type>(type);
 }
 
@@ -26,7 +26,7 @@ auto qtAsConst(T &t) {
 
 using namespace Qt::StringLiterals;
 
-QMetaType toQtType(QMetaType::Type type) {
+inline QMetaType toQtType(QMetaType::Type type) {
 	return QMetaType(type);
 }
 

@@ -45,12 +45,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref }}
     
     - name: Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           ${{ github.workspace }}/.ccache
@@ -98,12 +98,12 @@ jobs:
       RELEASE_TAG_NAME: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref }}
     
     - name: Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ${{ github.workspace }}/.ccache
@@ -157,7 +157,7 @@ jobs:
 
     steps:
     - name: Download Release Bundle
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: release-bundle-${{ env.RELEASE_TAG_NAME }}-*
         path: release-assets
@@ -169,7 +169,7 @@ jobs:
         sha256sum * > SHA256SUMS.txt
 
     - name: Publish Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         name: ${{ env.RELEASE_TAG_NAME }}
         tag_name: ${{ env.RELEASE_TAG_NAME }}

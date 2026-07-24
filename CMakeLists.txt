@@ -13,7 +13,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 option(QTDUCKDB_BUILD_EXAMPLES OFF)
 option(QTDUCKDB_BUILD_TESTS ON)
 option(QTDUCKDB_WARNING_AS_ERRORS OFF)
-set(QTDUCKDB_DUCKDB_VERSION "1.5.4" CACHE STRING "Version of DuckDB which should be included")
+set(QTDUCKDB_DUCKDB_VERSION "1.5.5" CACHE STRING "Version of DuckDB which should be included")
 
 include(cmake/DetectQtVersion.cmake)
 include(cmake/QtDuckDBProperties.cmake)

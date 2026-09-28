@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.23)
 
 set(CMAKE_PROJECT_INCLUDE_BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnableProjectCMP0048.cmake")
-project ("QtDuckDBDriver" VERSION 0.2.1)
+project ("QtDuckDBDriver" VERSION 0.3.0)
 
 # Match the static CRT linkage used by DuckDB (/MT) across all targets,
 # including tests, to avoid LNK2038 RuntimeLibrary mismatches on MSVC.

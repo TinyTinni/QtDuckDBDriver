@@ -8,7 +8,7 @@
 class ModelTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void basicModel() {
 		TestDatabase db;
 		db.exec("CREATE TABLE employee (Name VARCHAR, Salary INTEGER)");

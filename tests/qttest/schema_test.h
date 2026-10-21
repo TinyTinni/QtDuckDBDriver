@@ -9,7 +9,7 @@
 class SchemaTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void tableEnumeration() {
 		TestDatabase db;
 		db.exec("CREATE TABLE weather (city VARCHAR, temp_lo INTEGER, temp_hi INTEGER, prcp REAL, date DATE)");

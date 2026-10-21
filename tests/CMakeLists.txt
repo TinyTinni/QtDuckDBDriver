@@ -46,6 +46,9 @@ add_test(NAME driver_tests COMMAND driver_tests)
 set_tests_properties(driver_tests PROPERTIES TIMEOUT 600)
 add_qtduckdb_properties(driver_tests)
 target_link_libraries(driver_tests PRIVATE Qt::Test)
+# raw_handle_test.h pulls in the DuckDB headers, which use "slots" as an identifier.
+# Building without the Qt keywords keeps them intact (the test classes use Q_SLOTS).
+target_compile_definitions(driver_tests PRIVATE QT_NO_KEYWORDS)
 
 # for duckdb internal access (needed by raw_handle_test)
 if (WIN32)

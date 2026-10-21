@@ -218,7 +218,8 @@ void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
 	const auto &columnTypesVec = stmt->prepared->GetTypes();
 
 	for (duckdb::idx_t i = 0; i < nCols; ++i) {
-		QString colName = QString::fromStdString(columnNamesVec[i]).remove(u'"');
+		// DuckDB 2.0 returns the column names as Identifier, which keeps the original casing
+		QString colName = QString::fromStdString(columnNamesVec[i].GetIdentifierName()).remove(u'"');
 		auto fieldType = duckdbTypeToQtType(columnTypesVec[i]);
 
 		QSqlField fld(colName, toQtType(fieldType));
@@ -274,7 +275,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 
 	auto fetchNext = [&]() {
 		duckdb::ErrorData errData;
-		if (!stmt->result->TryFetch(stmt->current_chunk, errData)) {
+		if (!stmt->result->TryFetchOrError(stmt->current_chunk, errData)) {
 			buildError(errData);
 			return false;
 		}
@@ -294,7 +295,7 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 	};
 
 	auto executeQuery = [&]() {
-		stmt->result = stmt->prepared->Execute(stmt->bound_values, true);
+		stmt->result = stmt->prepared->Execute(stmt->bound_values);
 		if (stmt->result->HasError()) {
 			// error in execute: clear prepared statement
 			buildError(stmt->result->GetErrorObject());
@@ -465,7 +466,7 @@ bool QDuckDBResult::prepare(const QString &query) {
 	try {
 		auto prepared = db->con->Prepare(query.toStdString());
 		if (prepared->HasError()) {
-			build_error(prepared->error);
+			build_error(prepared->GetErrorObject());
 			return false;
 		}
 
@@ -474,7 +475,7 @@ bool QDuckDBResult::prepare(const QString &query) {
 		d->stmt->context = db->con->context;
 		d->stmt->prepared = std::move(prepared);
 		d->stmt->current_row = -1;
-		d->stmt->bound_values.resize(d->stmt->prepared->named_param_map.size());
+		d->stmt->bound_values.resize(d->stmt->prepared->GetNamedParameterMap().size());
 
 		return true;
 	} catch (std::exception &ex) {
@@ -524,7 +525,7 @@ bool QDuckDBResult::exec() {
 	d->stmt->result.reset();
 	d->stmt->current_chunk.reset();
 
-	size_t paramCount = d->stmt->prepared->named_param_map.size();
+	size_t paramCount = d->stmt->prepared->GetNamedParameterMap().size();
 	if (paramCount != static_cast<size_t>(values.size())) {
 		setLastError(QSqlError(QCoreApplication::translate("QDuckDBResult", "Parameter count mismatch"), QString(),
 		                       QSqlError::StatementError));

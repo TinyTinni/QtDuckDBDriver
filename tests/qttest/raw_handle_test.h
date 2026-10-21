@@ -9,7 +9,7 @@
 class RawHandleTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void handleValid() {
 		TestDatabase db;
 		auto handle = db.db().driver()->handle().value<DuckDBConnectionHandle>();
@@ -22,7 +22,7 @@ private slots:
 		auto handle = db.db().driver()->handle().value<DuckDBConnectionHandle>();
 		QVERIFY(handle.connection);
 
-		auto result = handle.connection->SendQuery(R"(CREATE TABLE weather (
+		auto result = handle.connection->Query(R"(CREATE TABLE weather (
 			city VARCHAR,
 			temp_lo INTEGER,
 			temp_hi INTEGER,
@@ -39,10 +39,10 @@ private slots:
 		auto handle = db.db().driver()->handle().value<DuckDBConnectionHandle>();
 		QVERIFY(handle.connection);
 
-		auto result = handle.connection->SendQuery("CREATE TABLE items (id INTEGER, name VARCHAR)");
+		auto result = handle.connection->Query("CREATE TABLE items (id INTEGER, name VARCHAR)");
 		QVERIFY(!result->HasError());
 
-		result = handle.connection->SendQuery("INSERT INTO items VALUES (1, 'test')");
+		result = handle.connection->Query("INSERT INTO items VALUES (1, 'test')");
 		QVERIFY(!result->HasError());
 
 		auto query = db.exec("SELECT COUNT(*) FROM items");

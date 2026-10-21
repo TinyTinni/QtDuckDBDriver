@@ -66,6 +66,9 @@ set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
 target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static ${QTDUCKDB_EXTENSION_LINK_TARGETS})
 target_link_libraries(QtDuckDBDriver PRIVATE ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
+# DuckDB 2.0 declares a member named "slots", which Qt's "slots" macro would expand to
+# nothing. Building without the Qt keywords keeps the DuckDB headers intact.
+target_compile_definitions(QtDuckDBDriver PRIVATE QT_NO_KEYWORDS)
 target_compile_definitions(QtDuckDBDriver PUBLIC DUCKDB_STATIC_BUILD)
 set_property(TARGET QtDuckDBDriver PROPERTY AUTOMOC ON)
 set_property(TARGET QtDuckDBDriver PROPERTY DEBUG_POSTFIX "d")

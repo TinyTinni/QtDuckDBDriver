@@ -7,7 +7,7 @@
 class QueryExecutionTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void selectBasic() {
 		TestDatabase db;
 		db.exec("CREATE TABLE weather (city VARCHAR, temp_lo INTEGER, temp_hi INTEGER, prcp REAL, date DATE)");

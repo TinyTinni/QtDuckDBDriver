@@ -9,7 +9,7 @@
 class ErrorHandlingTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void invalidSQLSyntax() {
 		TestDatabase db;
 		auto query = db.exec("SELCT * FROM nonexistent");

@@ -9,7 +9,7 @@
 class FeaturesTest : public QObject {
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void featuresSupported() {
 		TestDatabase db;
 		auto *drv = db.db().driver();

@@ -218,7 +218,6 @@ void QDuckDBResultPrivate::initColumns(bool /*emptyResultset*/) {
 	const auto &columnTypesVec = stmt->prepared->GetTypes();
 
 	for (duckdb::idx_t i = 0; i < nCols; ++i) {
-		// DuckDB 2.0 returns the column names as Identifier, which keeps the original casing
 		QString colName = QString::fromStdString(columnNamesVec[i].GetIdentifierName()).remove(u'"');
 		auto fieldType = duckdbTypeToQtType(columnTypesVec[i]);
 
@@ -258,9 +257,9 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 	if (!stmt->prepared) {
 		q->setLastError(
 		    QSqlError(QCoreApplication::translate("QDuckDbResult", "Unable to fetch row"),
-		              QCoreApplication::translate("QDuckDbResult",
-		                                          "Attempting fetchNext() on a non-successfully prepared statement."),
-		              QSqlError::ConnectionError));
+			          QCoreApplication::translate("QDuckDbResult",
+			                                      "Attempting fetchNext() on a non-successfully prepared statement."),
+			          QSqlError::ConnectionError));
 		q->setAt(QSql::AfterLastRow);
 		return false;
 	}
@@ -310,8 +309,11 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 		    stmt->current_chunk->size() > 0) {
 			// update total changes
 			auto row_changes = stmt->current_chunk->GetValue(0, 0);
-			if (!row_changes.IsNull() && row_changes.DefaultTryCastAs(duckdb::LogicalType::BIGINT)) {
-				stmt->last_changes = row_changes.GetValue<int64_t>();
+			if (!row_changes.IsNull()) {
+				auto changed_rows = row_changes.DefaultTryCastAs(duckdb::LogicalType::BIGINT);
+				if (changed_rows.has_value()) {
+					stmt->last_changes = changed_rows->GetValue<int64_t>();
+				}
 			}
 		}
 		if (properties.return_type != duckdb::StatementReturnType::QUERY_RESULT) {
@@ -378,13 +380,16 @@ bool QDuckDBResultPrivate::fetchNext(QSqlCachedResult::ValueCache &valuesCache, 
 					break;
 				};
 				break;
-			default:
-				if (val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR)) {
-					valuesCache[i + in_idx] = QString::fromStdString(duckdb::StringValue::Get(val));
+			default: {
+				// DuckDB 2.0 returns the cast value instead of casting in place
+				auto strVal = val.TryCastAs(*stmt->context, duckdb::LogicalType::VARCHAR);
+				if (strVal.has_value()) {
+					valuesCache[i + in_idx] = QString::fromStdString(duckdb::StringValue::Get(*strVal));
 				} else {
 					valuesCache[i + in_idx] = QVariant::fromValue(QString());
 				}
 				break;
+			}
 			}
 		}
 		return true;

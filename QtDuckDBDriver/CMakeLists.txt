@@ -31,27 +31,30 @@ set(QTDUCKDB_PLUGIN_INSTALL_DIR "sqldrivers" CACHE STRING "Install directory for
 set(QTDUCKDB_PACKAGE_SUFFIX "${CMAKE_SYSTEM_NAME}-Qt${QTDUCKDB_QT_VERSION}" CACHE STRING "Suffix used for package filenames")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${QTDUCKDB_PACKAGE_SUFFIX}")
 
-set(QTDUCKDB_EXTENSION_LINK_TARGETS duckdb_generated_extension_loader)
+# DuckDB 2.0 links the extensions into a target with duckdb_link_extensions(): it adds the
+# extension archives, generates the loader that registers them and adds the autoloader that
+# registers them before main. The helper needs the DuckDB source directory in the scope it is
+# called from, DuckDB only sets it in its own directory scope.
+set(DUCKDB_MODULE_BASE_DIR "${duckdb_SOURCE_DIR}")
+set(DUCKDB_MODULE_BASE_DIR "${duckdb_SOURCE_DIR}" PARENT_SCOPE)
+
+set(QTDUCKDB_EXTENSION_NAMES)
 foreach(_qtduckdb_extension IN LISTS QTDUCKDB_DUCKDB_EXTENSIONS)
-    if (TARGET ${_qtduckdb_extension}_extension)
-        list(APPEND QTDUCKDB_EXTENSION_LINK_TARGETS ${_qtduckdb_extension}_extension)
-    endif()
+    list(APPEND QTDUCKDB_EXTENSION_NAMES ${_qtduckdb_extension})
 endforeach()
-foreach(_qtduckdb_builtin_extension IN ITEMS core_functions parquet jemalloc)
-    if (TARGET ${_qtduckdb_builtin_extension}_extension)
-        list(APPEND QTDUCKDB_EXTENSION_LINK_TARGETS ${_qtduckdb_builtin_extension}_extension)
-    endif()
+foreach(_qtduckdb_builtin_extension IN ITEMS core_functions parquet)
+    list(APPEND QTDUCKDB_EXTENSION_NAMES ${_qtduckdb_builtin_extension})
 endforeach()
-list(REMOVE_DUPLICATES QTDUCKDB_EXTENSION_LINK_TARGETS)
-set(QTDUCKDB_EXTENSION_LINK_TARGETS "${QTDUCKDB_EXTENSION_LINK_TARGETS}" CACHE INTERNAL "DuckDB extension link targets for QtDuckDBDriver")
+list(REMOVE_DUPLICATES QTDUCKDB_EXTENSION_NAMES)
+set(QTDUCKDB_EXTENSION_NAMES "${QTDUCKDB_EXTENSION_NAMES}" CACHE INTERNAL "DuckDB extensions linked into the Qt SQL driver" FORCE)
 
 # DuckDB's bundled fmt library instantiates std::char_traits with a non-standard
 # type, triggering -Wdeprecated-declarations on macOS (Apple libc++). Suppress
 # this only on DuckDB's own extension targets where it originates.
 if(APPLE)
-    foreach(_ext_target ${QTDUCKDB_EXTENSION_LINK_TARGETS})
-        if(TARGET ${_ext_target})
-            target_compile_options(${_ext_target} PRIVATE -Wno-deprecated-declarations)
+    foreach(_ext_name IN LISTS QTDUCKDB_EXTENSION_NAMES)
+        if(TARGET ${_ext_name}_extension)
+            target_compile_options(${_ext_name}_extension PRIVATE -Wno-deprecated-declarations)
         endif()
     endforeach()
 endif()
@@ -63,7 +66,8 @@ target_sources(QtDuckDBDriver PUBLIC FILE_SET include_those TYPE HEADERS FILES "
 target_include_directories(QtDuckDBDriver SYSTEM PUBLIC "${duckdb_SOURCE_DIR}/src/include")
 
 set_property(TARGET QtDuckDBDriver PROPERTY CXX_STANDARD 17)
-target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static ${QTDUCKDB_EXTENSION_LINK_TARGETS})
+target_link_libraries(QtDuckDBDriver PUBLIC Qt::Sql duckdb_static)
+duckdb_link_extensions(QtDuckDBDriver PRIVATE ${QTDUCKDB_EXTENSION_NAMES})
 target_link_libraries(QtDuckDBDriver PRIVATE ${QTPrivateSql})
 target_compile_definitions(QtDuckDBDriver PRIVATE QT_PLUGIN)
 # DuckDB 2.0 declares a member named "slots", which Qt's "slots" macro would expand to
